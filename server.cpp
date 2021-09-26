@@ -51,7 +51,7 @@ void * socketThread(void *socket)
             }
         }
 
-        if (strcmp(buffer, CLIENT_PUZZLE_SOLUTION)) {
+        if (strcmp(buffer, CLIENT_PUZZLE_SOLUTION) == 0) {
             if(authenticated)  {
                 // Check solution if correct send HANDSHAKE_COMPLETE
                 //else send CLIENT_PUZZLE_RETRY
@@ -67,7 +67,7 @@ void * socketThread(void *socket)
         }
 
         //Client asks for resource, wait 5s as then respond
-        if (strcmp(GET_RESOURCE,buffer)) {
+        if (strcmp(GET_RESOURCE,buffer) == 0) {
             printf("CLIENT: GET RESOURCE\n");
             if(authenticated) {
                 //send some random stuff

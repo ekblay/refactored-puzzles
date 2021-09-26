@@ -1,4 +1,4 @@
-all: server.cpp client.cpp
+all: server.cpp client.cpp crypt.cpp
 	g++ server.cpp -o server -lpthread
 	g++ client.cpp -o client -lpthread
 	g++ -o crypt crypt.cpp -lcrypto 

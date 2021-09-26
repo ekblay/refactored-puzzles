@@ -7,17 +7,17 @@
 #include <openssl/sha.h>
 #include <openssl/rand.h>
 #include <openssl/err.h>
-#include <time.h>
+#include <ctime>
 
 class ClientPuzzle {
 private:
     unsigned char serverSideSecret[32];
-    time_t timeStamp;
+    char date[9];
     const unsigned char * input;
     unsigned char out[SHA256_DIGEST_LENGTH];
     int computeHash(int rounds);
     int generateServerSideSecret();
-    int generateTimeStamp();
+    int generateDateStamp();
 
 public:
     void init_clientPuzzle();
