@@ -1,11 +1,12 @@
 // Server side C/C++ program to demonstrate Socket programming
 #include <unistd.h>
-#include <stdio.h>
+#include <cstdio>
 #include <sys/socket.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <netinet/in.h>
-#include <string.h>
+#include <cstring>
 #include<pthread.h>
+#include "crypt.h"
 
 //utils
 #include "messages.h"
@@ -17,7 +18,7 @@ void * socketThread(void *socket)
 
     int not_done = 1;
     int issued_puzzle = 0;
-    int overloaded;
+    int overloaded = 0;
     int authenticated;
 
     int numBytes;
@@ -28,7 +29,7 @@ void * socketThread(void *socket)
         numBytes = recv(newSocket, buffer, 1024,0);
         //Read up to the end of the size of the string read
         buffer[numBytes] = '\0';
-        printf("\n********************************\n");
+        printf("********************************\n");
 
         if (strcmp(buffer, CLIENT_HELLO) == 0) { //CLIENT_HELLO
             printf("CLIENT: CLIENT HELLO\n");
@@ -38,6 +39,9 @@ void * socketThread(void *socket)
 
         //ACK after sending the SERVER HELLO to acknowledge receipt and ready for request
         if (strcmp(buffer,ACK_HELLO) == 0) {
+
+            ClientPuzzle cr = {};
+            cr.init_clientPuzzle();
             printf("CLIENT: ACK HELLO\n");
             if(overloaded) { // if system is overloaded send CLIENT_PUZZLE
                 send(newSocket, HANDSHAKE_COMPLETE, strlen(CLIENT_PUZZLE), 0);
@@ -77,14 +81,14 @@ void * socketThread(void *socket)
             }
         }
 
-        if (strcmp(buffer, END_SESSION)) {
+        if (strcmp(buffer, END_SESSION) == 0) {
             printf("CLIENT: END SESSION\n");
             not_done = 0;
             printf("Server has ended session with client\n");
         }
 
     }
-    printf("\n********************************\n");
+    printf("********************************\n");
     return 0;
 }
 
@@ -134,7 +138,7 @@ int main(int argc, char const *argv[]) {
             perror("accept");
             exit(EXIT_FAILURE);
         } else {
-            printf("\n\n New Client has been accepted\n");
+            printf("\nNew Client has been accepted\n");
         }
 
         if( pthread_create(&tid[i++], NULL, socketThread, &new_socket) != 0 ) {

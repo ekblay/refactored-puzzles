@@ -65,7 +65,7 @@ int main(int argc, char const *argv[])
             return 0;
         }
 
-        if((strcmp(buffer, CLIENT_PUZZLE) == 0) || ((strcmp(buffer, CLIENT_PUZZLE_RETRY))) {
+        if((strcmp(buffer, CLIENT_PUZZLE) == 0) || ((strcmp(buffer, CLIENT_PUZZLE_RETRY) == 0))) {
             //Solve puzzle and send out
             send(sock, CLIENT_PUZZLE_SOLUTION, strlen(CLIENT_PUZZLE_SOLUTION), 0);
         }
