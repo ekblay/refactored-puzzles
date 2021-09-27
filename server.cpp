@@ -17,41 +17,41 @@ void * socketThread(void *socket)
     int newSocket = *((int *)socket);
 
     int not_done = 1;
+    //TODO Set the appropriate values
     int issued_puzzle = 0;
     int overloaded = 0;
-    int authenticated;
+    int authenticated =1;
 
     int numBytes;
     char buffer[1024];
 //Initial read
+    std::cout <<"********************************" <<std::endl;
     while (not_done) {
         //
         numBytes = recv(newSocket, buffer, 1024,0);
         //Read up to the end of the size of the string read
         buffer[numBytes] = '\0';
-        printf("********************************\n");
 
         if (strcmp(buffer, CLIENT_HELLO) == 0) { //CLIENT_HELLO
-            printf("CLIENT: CLIENT HELLO\n");
+            std::cout<<"CLIENT: CLIENT HELLO"<<std::endl;
             send(newSocket, SERVER_HELLO, sizeof(SERVER_HELLO), 0);
-            printf("SENT: SENT SERVER HELLO\n");
+            std::cout<<"SENT: SENT SERVER HELLO"<<std::endl;
         }
 
         //ACK after sending the SERVER HELLO to acknowledge receipt and ready for request
         if (strcmp(buffer,ACK_HELLO) == 0) {
-
             ClientPuzzle cr = {};
             cr.init_clientPuzzle();
-            printf("CLIENT: ACK HELLO\n");
+            std::cout<<"CLIENT: ACK HELLO"<<std::endl;
             if(overloaded) { // if system is overloaded send CLIENT_PUZZLE
                 send(newSocket, HANDSHAKE_COMPLETE, strlen(CLIENT_PUZZLE), 0);
                 issued_puzzle = 1;
                 //TODO Send out client puzzle
-                printf("SENT: CLIENT PUZZLE\n");
+                std::cout<<"SENT: CLIENT PUZZLE"<<std::endl;
             } else { //else send HANDSHAKE_COMPLETE
                 send(newSocket, HANDSHAKE_COMPLETE, strlen(HANDSHAKE_COMPLETE), 0);
                 authenticated = 1;
-                printf("SENT: HANDSHAKE COMPLETE\n");
+                std::cout<<"SENT: HANDSHAKE COMPLETE"<<std::endl;
             }
         }
 
@@ -72,23 +72,27 @@ void * socketThread(void *socket)
 
         //Client asks for resource, wait 5s as then respond
         if (strcmp(GET_RESOURCE,buffer) == 0) {
-            printf("CLIENT: GET RESOURCE\n");
+            std::cout <<"CLIENT: GET RESOURCE"<<std::endl;
             if(authenticated) {
                 //send some random stuff
                 sleep(5);
                 send(newSocket, RESOURCE, strlen(RESOURCE), 0);
-                printf("SENT: RESOURCE\n");
+                std::cout << "SENT: RESOURCE" << std::endl;
+            } else {
+
+                send(newSocket, INVALID_REQUEST, strlen(INVALID_REQUEST), 0);
+                std::cout << "SENT: INVALID REQUEST\n" << std::endl;
             }
         }
 
         if (strcmp(buffer, END_SESSION) == 0) {
-            printf("CLIENT: END SESSION\n");
+            std::cout<<"CLIENT: END SESSION"<<std::endl;
             not_done = 0;
-            printf("Server has ended session with client\n");
+            std::cout<<"Server has ended session with client"<<std::endl;
         }
 
     }
-    printf("********************************\n");
+    std::cout<<"********************************\n"<<std::endl;
     return 0;
 }
 
@@ -132,20 +136,21 @@ int main(int argc, char const *argv[]) {
     pthread_t tid[60];
     int i = 0;
 
-    printf("Listening\n");
+    std::cout<<"Listening"<<std::endl;
     while(1) {
         if ((new_socket = accept(server_fd, (struct sockaddr *) &address, (socklen_t * ) & addrlen)) < 0) {
             perror("accept");
             exit(EXIT_FAILURE);
         } else {
-            printf("\nNew Client has been accepted\n");
+            std::cout<<"\nNew Client has been accepted"<<std::endl;
         }
 
         if( pthread_create(&tid[i++], NULL, socketThread, &new_socket) != 0 ) {
             printf("Failed to create thread\n");
+            exit(EXIT_FAILURE);
         }
 
-        printf("Creating new thread for client\n");
+        std::cout<<"Creating new thread for client"<<std::endl;
         if( i >= 50)
         {
             i = 0;

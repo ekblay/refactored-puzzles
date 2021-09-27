@@ -3,4 +3,4 @@ all: server.cpp client.cpp
 	g++ client.cpp -o client -lpthread
 
 clean:
-	rm server client crypt
+	rm server client

@@ -19,13 +19,11 @@ private:
     std::string serverSideSecret;
     std::string date;
     std::string hashOutput;
-public:
-    const std::string &getHashOutput() const;
+    std::string puzzleToSolve;
 
-    void setHashOutput(const std::string &hashOutput);
 
-private:
     std::string computeHash(int rounds);
+    std::string computePuzzleToSolve();
     std::string generateServerSideSecret();
     std::string generateDateStamp();
 
@@ -34,6 +32,7 @@ private:
 
 public:
     void init_clientPuzzle();
+    const std::string &getHashOutput() const;
 
 
 };
@@ -48,9 +47,9 @@ void ClientPuzzle::init_clientPuzzle() {
     date = generateDateStamp();
     hashOutput = computeHash(HASH_ROUNDS);
 
-    std::cout << "Server Side secret : " + serverSideSecret << std::endl;
-    std::cout << "Date : " + date << std::endl;
-    std::cout << "Hash : " + hashOutput << std::endl;
+//    std::cout << "Server Side secret : " + serverSideSecret << std::endl;
+//    std::cout << "Date : " + date << std::endl;
+//    std::cout << "Hash : " + hashOutput << std::endl;
 }
 
 std::string ClientPuzzle::generateDateStamp() {
@@ -80,7 +79,9 @@ std::string ClientPuzzle::generateServerSideSecret() {
 
 }
 
-
+std::string computePuzzleToSolve() {
+    return "";
+}
 std::string ClientPuzzle::computeHash(int rounds) {
     /*
      * Generate initial hash value from:
@@ -88,7 +89,6 @@ std::string ClientPuzzle::computeHash(int rounds) {
      * TIMESTAMP
      */
     std::string inputString = serverSideSecret + date;
-    std::cout << inputString<< std::endl;
     std::string hash = hash256(inputString);
 
 
@@ -117,6 +117,7 @@ std::string ClientPuzzle::hash256(const std::string &string) {
 
     return std::string(mdString);
 }
+
 
 const std::string &ClientPuzzle::getHashOutput() const {
     return hashOutput;

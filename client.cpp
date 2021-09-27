@@ -39,39 +39,44 @@ int main(int argc, char const *argv[])
     int numBytes;
     char buffer[1024] = {0};
     send(sock,CLIENT_HELLO, sizeof(CLIENT_HELLO), 0);
+    std::cout<<"SENT: CLIENT HELLO"<<std::endl;
     while (1) {
         numBytes = recv(sock, buffer, 1024,0);
         buffer[numBytes] = '\0';
-        printf("%s\n", buffer);
 
         //SERVER_HELLO
         if (strcmp(buffer, SERVER_HELLO) == 0) {
-            //send SERVER_HELLO
-            printf("Got a Server hello\n");
+            std::cout<<"SERVER: SERVER HELLO"<<std::endl;
             send(sock, ACK_HELLO, strlen(ACK_HELLO), 0);
-
+            std::cout<<"SENT: ACK HELLO"<<std::endl;
         }
 
         //ACK after sending the SERVER HELLO to acknowledge receipt and ready for request
         if (strcmp(buffer,HANDSHAKE_COMPLETE) == 0) {
-            printf("Got handshake_complete\n");
+            std::cout<<"SERVER: HANDSHAKE COMPLETE"<<std::endl;
             send(sock, GET_RESOURCE, strlen(GET_RESOURCE), 0);
-
+            std::cout<<"SENT: GET RESOURCE"<<std::endl;
         }
 
         if(strcmp(buffer,RESOURCE) == 0) {
-            printf("Got resource\n");
+            std::cout<<"SERVER: RESOURCE"<<std::endl;
             send(sock, END_SESSION, strlen(END_SESSION), 0);
+            std::cout<<"*************SESSION ENDED*************"<<std::endl;
             return 0;
         }
 
         if((strcmp(buffer, CLIENT_PUZZLE) == 0) || ((strcmp(buffer, CLIENT_PUZZLE_RETRY) == 0))) {
+            std::cout<<"SERVER: "<<buffer<<std::endl;
             //Solve puzzle and send out
             send(sock, CLIENT_PUZZLE_SOLUTION, strlen(CLIENT_PUZZLE_SOLUTION), 0);
+            std::cout<<"SENT: CLIENT PUZZLE"<<std::endl;
         }
 
         if(strcmp(buffer, INVALID_REQUEST) == 0) {
-
+            std::cout<<"SERVER: INVALID REQUEST"<<std::endl;
+            //On an invalid request restart the client hello
+            send(sock,CLIENT_HELLO, sizeof(CLIENT_HELLO), 0);
+            std::cout<<"SENT: CLIENT HELLO"<<std::endl;
         }
 
     }
