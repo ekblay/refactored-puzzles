@@ -1,4 +1,3 @@
-
 #include <unistd.h>
 #include <cstdio>
 #include <sys/socket.h>
@@ -6,11 +5,14 @@
 #include <netinet/in.h>
 #include <cstring>
 #include<pthread.h>
-#include "crypt.h"
+
 
 //utils
 #include "messages.h"
+#include "crypt.h"
 #define PORT 8080
+ClientPuzzle cr = {};
+
 
 void * socketThread(void *socket)
 {
@@ -24,6 +26,8 @@ void * socketThread(void *socket)
 
     int numBytes;
     char buffer[1024];
+    std::string stringBuf;
+    std::string prefix;
 //Initial read
     std::cout <<"********************************" <<std::endl;
     while (not_done) {
@@ -32,63 +36,81 @@ void * socketThread(void *socket)
         //Read up to the end of the size of the string read
         buffer[numBytes] = '\0';
 
-        if (strcmp(buffer, CLIENT_HELLO) == 0) { //CLIENT_HELLO
+        stringBuf = std::string (buffer);
+        prefix = stringBuf.substr(0,1);
+         if (prefix != MESSAGE_HEADER) {
+             send(newSocket, (MESSAGE_HEADER + INVALID_REQUEST).c_str(), (MESSAGE_HEADER + INVALID_REQUEST).length(),
+                  0);
+             std::cout << "SENT: INVALID REQUEST\n" << std::endl;
+         }
+
+         //Read the message after the MESSAGE HEADER
+         unsigned long length = (stringBuf.find(DATA) != -1) ? stringBuf.find(DATA) -1 : stringBuf.length();
+         stringBuf = stringBuf.substr(1, length);
+
+        if (stringBuf == CLIENT_HELLO) { //CLIENT_HELLO
             std::cout<<"CLIENT: CLIENT HELLO"<<std::endl;
-            send(newSocket, SERVER_HELLO, sizeof(SERVER_HELLO), 0);
+            send(newSocket, (MESSAGE_HEADER + SERVER_HELLO).c_str(), (MESSAGE_HEADER + SERVER_HELLO).length(), 0);
             std::cout<<"SENT: SENT SERVER HELLO"<<std::endl;
         }
 
         //ACK after sending the SERVER HELLO to acknowledge receipt and ready for request
-        if (strcmp(buffer,ACK_HELLO) == 0) {
-            ClientPuzzle cr = {};
-            cr.init_clientPuzzle();
+        if (stringBuf == ACK_HELLO) {
             std::cout<<"CLIENT: ACK HELLO"<<std::endl;
             if(1) { // if system is overloaded send CLIENT_PUZZLE
-                send(newSocket, CLIENT_PUZZLE, strlen(CLIENT_PUZZLE), 0);
-              //TODO Concatenate the client puzzle into one huge string and send in one swoop
+                send(newSocket, (MESSAGE_HEADER + CLIENT_PUZZLE).c_str(), (MESSAGE_HEADER + CLIENT_PUZZLE).length(), 0);
+
                 //Send target hash
-                sleep(2);
-                send(newSocket, cr.getPuzzlePayload().c_str(), strlen(cr.getPuzzlePayload().c_str()), 0);
+                send(newSocket, (DATA + cr.getPuzzlePayload()).c_str(), (DATA + cr.getPuzzlePayload()).length(), 0);
                 issued_puzzle = 1;
                 std::cout<<"SENT: CLIENT PUZZLE"<<std::endl;
             } else { //else send HANDSHAKE_COMPLETE
-                send(newSocket, HANDSHAKE_COMPLETE, strlen(HANDSHAKE_COMPLETE), 0);
+                send(newSocket, (MESSAGE_HEADER + HANDSHAKE_COMPLETE).c_str(), (MESSAGE_HEADER + HANDSHAKE_COMPLETE).length(), 0);
                 authenticated = 1;
                 std::cout<<"SENT: HANDSHAKE COMPLETE"<<std::endl;
             }
         }
 
-        if (strcmp(buffer, CLIENT_PUZZLE_SOLUTION) == 0) {
+        if (stringBuf == CLIENT_PUZZLE_SOLUTION) {
+            std::cout<<"CLIENT: CLIENT PUZZLE SOLUTION"<<std::endl;
             if(authenticated)  {
                 // Check solution if correct send HANDSHAKE_COMPLETE
                 //else send CLIENT_PUZZLE_RETRY
                 if (issued_puzzle) {
-
-                    send(newSocket, HANDSHAKE_COMPLETE, strlen(HANDSHAKE_COMPLETE), 0);
+                    send(newSocket, (MESSAGE_HEADER + HANDSHAKE_COMPLETE).c_str(),(MESSAGE_HEADER + HANDSHAKE_COMPLETE).length(), 0);
                     //TODO if puzzle is correct send retry else authenticate
                     authenticated = 1;
                     issued_puzzle = 0;
+                    std::cout<<"SENT: HANDSHAKE COMPLETE"<<std::endl;
                 }
-
             }
+            std::cout<<"SENT: INVALID REQUEST"<<std::endl;
         }
 
         //Client asks for resource, wait 5s as then respond
-        if (strcmp(GET_RESOURCE,buffer) == 0) {
+        if ( stringBuf == GET_RESOURCE) {
             std::cout <<"CLIENT: GET RESOURCE"<<std::endl;
             if(authenticated) {
                 //send some random stuff
-                sleep(5);
-                send(newSocket, RESOURCE, strlen(RESOURCE), 0);
+                sleep(2);
+                send(newSocket, (MESSAGE_HEADER + RESOURCE).c_str(),(MESSAGE_HEADER + RESOURCE).length() , 0);
                 std::cout << "SENT: RESOURCE" << std::endl;
             } else {
 
-                send(newSocket, INVALID_REQUEST, strlen(INVALID_REQUEST), 0);
+                send(newSocket,(MESSAGE_HEADER + INVALID_REQUEST).c_str(), (MESSAGE_HEADER + INVALID_REQUEST).length(), 0);
                 std::cout << "SENT: INVALID REQUEST\n" << std::endl;
             }
         }
 
-        if (strcmp(buffer, END_SESSION) == 0) {
+        if(stringBuf == INVALID_REQUEST) {
+
+            //TODO check if authenticated
+            std::cout<<"CLIENT: INVALID REQUEST"<<std::endl;
+            send(newSocket, (MESSAGE_HEADER + SERVER_HELLO).c_str(), (MESSAGE_HEADER + SERVER_HELLO).length(), 0);
+            std::cout<<"SENT: INVALID REQUEST"<<std::endl;
+        }
+
+        if (stringBuf == END_SESSION) {
             std::cout<<"CLIENT: END SESSION"<<std::endl;
             not_done = 0;
             std::cout<<"Server has ended session with client"<<std::endl;
@@ -139,6 +161,7 @@ int main(int argc, char const *argv[]) {
     pthread_t tid[60];
     int i = 0;
 
+    cr.init_clientPuzzle();
     std::cout<<"Listening"<<std::endl;
     while(1) {
         if ((new_socket = accept(server_fd, (struct sockaddr *) &address, (socklen_t * ) & addrlen)) < 0) {

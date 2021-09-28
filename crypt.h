@@ -15,6 +15,7 @@
 #include <cmath>
 #include <bitset>
 #include <sstream>
+#include <array>
 
 #define HASH_ROUNDS  1
 #define PUZZLE_STRENGTH 16
@@ -48,6 +49,7 @@ public:
     int getNumberOfMissingCharacters() const;
 
     std::string getPuzzlePayload();
+    static std::string calculateSolution(std::string puzzle, std::string solution);
 
 };
 
@@ -183,5 +185,11 @@ std::string ClientPuzzle::getPuzzlePayload() {
     std::to_string(numberOfMissingCharacters) +  SEPARATOR +
     date;
 }
+
+ std::string ClientPuzzle::calculateSolution(std::string puzzle, std::string solution) {
+    return std::string();
+}
+
+
 
 

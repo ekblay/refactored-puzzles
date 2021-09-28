@@ -1,4 +1,3 @@
-// Client side C/C++ program to demonstrate Socket programming
 #include <stdio.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -9,6 +8,9 @@
 
 //utils
 #include "messages.h"
+#include "crypt.h"
+
+
 int main(int argc, char const *argv[]) {
     int sock = 0;
     struct sockaddr_in serv_addr;
@@ -36,59 +38,104 @@ int main(int argc, char const *argv[]) {
     }
 
     int numBytes;
+    int hasData =0;
     char buffer[1024] = {0};
-    send(sock,CLIENT_HELLO, sizeof(CLIENT_HELLO), 0);
+    std::string stringBuf;
+    std::string dataBuf;
+    std::string prefix;
+    send(sock,(MESSAGE_HEADER + CLIENT_HELLO).c_str(), (MESSAGE_HEADER + CLIENT_HELLO).length(), 0);
     std::cout<<"SENT: CLIENT HELLO"<<std::endl;
     while (1) {
         numBytes = recv(sock, buffer, 1024,0);
         buffer[numBytes] = '\0';
-        std::cout<<buffer<<std::endl;
+
+        stringBuf = std::string (buffer);
+        prefix = stringBuf.substr(0,1);
+        if (prefix != MESSAGE_HEADER) {
+            send(sock, (MESSAGE_HEADER + INVALID_REQUEST).c_str(), (MESSAGE_HEADER + INVALID_REQUEST).length(),0);
+            std::cout << "SENT: INVALID REQUEST\n" << std::endl;
+        }
+
+        //check for data
+        if(stringBuf.find(DATA) != -1) {
+            dataBuf = stringBuf.substr( stringBuf.find(DATA));
+            hasData =1;
+        }
+
+        //Read the message after the MESSAGE HEADER
+        unsigned long length = (stringBuf.find(DATA) != -1) ? stringBuf.find(DATA)-1 : stringBuf.length();
+        stringBuf = stringBuf.substr(1, length);
+
+
+
+
 
         //SERVER_HELLO
-        if (strcmp(buffer, SERVER_HELLO) == 0) {
+        if (stringBuf.compare(SERVER_HELLO) == 0) {
             std::cout<<"SERVER: SERVER HELLO"<<std::endl;
-            send(sock, ACK_HELLO, strlen(ACK_HELLO), 0);
+            send(sock, (MESSAGE_HEADER + ACK_HELLO).c_str(), (MESSAGE_HEADER + ACK_HELLO).length(), 0);
             std::cout<<"SENT: ACK HELLO"<<std::endl;
         }
 
         //ACK after sending the SERVER HELLO to acknowledge receipt and ready for request
-        if (strcmp(buffer,HANDSHAKE_COMPLETE) == 0) {
+        if (stringBuf.compare(HANDSHAKE_COMPLETE) == 0) {
             std::cout<<"SERVER: HANDSHAKE COMPLETE"<<std::endl;
-            send(sock, GET_RESOURCE, strlen(GET_RESOURCE), 0);
+            send(sock, (MESSAGE_HEADER + GET_RESOURCE).c_str(), (MESSAGE_HEADER + GET_RESOURCE).length(), 0);
             std::cout<<"SENT: GET RESOURCE"<<std::endl;
         }
 
-        if(strcmp(buffer,RESOURCE) == 0) {
+        if(stringBuf.compare(RESOURCE) == 0) {
             std::cout<<"SERVER: RESOURCE"<<std::endl;
-            send(sock, END_SESSION, strlen(END_SESSION), 0);
+            send(sock, (MESSAGE_HEADER + END_SESSION).c_str(), (MESSAGE_HEADER + END_SESSION).length(), 0);
             std::cout<<"*************SESSION ENDED*************"<<std::endl;
             return 0;
         }
 
-        if((strcmp(buffer, CLIENT_PUZZLE) == 0) || ((strcmp(buffer, CLIENT_PUZZLE_RETRY) == 0))) {
+        if((stringBuf.compare(CLIENT_PUZZLE)) == 0 || (stringBuf.compare(CLIENT_PUZZLE_RETRY)) == 0) {
+            std::cout<<"SENT: " + stringBuf<<std::endl;
             //Retrieve all the data for the puzzle
+            if(!hasData) {
+                char puzzleBuffer[2048] = {0};
+                int bytesReceived;
+                //target hash
+                bytesReceived = recv(sock, puzzleBuffer, 2048, 0);
+                puzzleBuffer[bytesReceived] = '\0';
+                dataBuf = std::string(puzzleBuffer);
+                hasData = 0;
+            }
+            //Strip off header
+            dataBuf.erase(0,MESSAGE_HEADER.length());
 
-            //TODO read all the data from the server and parse it
-            char puzzleBuffer[2048] = {0};
-            int bytesReceived;
-            //target hash
-            bytesReceived = recv(sock, puzzleBuffer, 2048,0);
-            puzzleBuffer[bytesReceived] = '\0';
-            std::string targetHash(puzzleBuffer);
+            //TODO include the number of data elements coming in
+            size_t pos = 0;
+            std::string token;
+            std::array<std::string,4> dat; int i =0;
+            while ((pos = dataBuf.find(DELIMITER)) != std::string::npos) {
+                token = dataBuf.substr(0, pos);
+                dat[i] = token; i++;
+                dataBuf.erase(0, pos + DELIMITER.length());
+            }
+            dat[i] = dataBuf;
+            std::string solution = dat[0];
+            std::string clientPuzzle =dat[1] ;
+            int rounds = stoi(dat[2]);
+            std::string date = dat[3];
 
-
-            std::cout<<"Target Hash: " + targetHash<<std::endl;
+//            std::cout<<"solution: " + solution<<std::endl;
+//            std::cout<<"puzzle: " + clientPuzzle<<std::endl;
+//            std::cout<<"rounds: " + std::to_string(rounds)<<std::endl;
+//            std::cout<<"date: " + date<<std::endl;
 
 
             //Solve puzzle and send out
-            send(sock, CLIENT_PUZZLE_SOLUTION, strlen(CLIENT_PUZZLE_SOLUTION), 0);
+            send(sock,(MESSAGE_HEADER + CLIENT_PUZZLE_SOLUTION).c_str(),(MESSAGE_HEADER + CLIENT_PUZZLE_SOLUTION).length() , 0);
             std::cout<<"SENT: CLIENT PUZZLE"<<std::endl;
         }
 
-        if(strcmp(buffer, INVALID_REQUEST) == 0) {
+        if(stringBuf.compare(INVALID_REQUEST) == 0) {
             std::cout<<"SERVER: INVALID REQUEST"<<std::endl;
             //On an invalid request restart the client hello
-            send(sock,CLIENT_HELLO, sizeof(CLIENT_HELLO), 0);
+            send(sock,(MESSAGE_HEADER + CLIENT_HELLO).c_str(), (MESSAGE_HEADER + CLIENT_HELLO).length() , 0);
             std::cout<<"SENT: CLIENT HELLO"<<std::endl;
         }
 
