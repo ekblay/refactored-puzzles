@@ -7,7 +7,12 @@
 #define CLIENTPUZZLE_ORIGINAL_MESSAGES_H
 #endif //CLIENTPUZZLE_ORIGINAL_MESSAGES_H
 
+//HEADERS
+char MESSAGE_HEADER= '!';
+char DATA = '#';
+char SEPARATOR = '~';
 
+//Messages
 char CLIENT_HELLO[80] =  "CLIENT_HELLO"; //Sent on starting connection with a server
 char SERVER_HELLO [80]= "SERVER_HELLO";  //Sent in response to a client hello
 char ACK_HELLO[80]  = "ACK_HELLO";

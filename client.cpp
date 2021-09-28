@@ -9,8 +9,7 @@
 
 //utils
 #include "messages.h"
-int main(int argc, char const *argv[])
-{
+int main(int argc, char const *argv[]) {
     int sock = 0;
     struct sockaddr_in serv_addr;
 
@@ -43,6 +42,7 @@ int main(int argc, char const *argv[])
     while (1) {
         numBytes = recv(sock, buffer, 1024,0);
         buffer[numBytes] = '\0';
+        std::cout<<buffer<<std::endl;
 
         //SERVER_HELLO
         if (strcmp(buffer, SERVER_HELLO) == 0) {
@@ -66,7 +66,20 @@ int main(int argc, char const *argv[])
         }
 
         if((strcmp(buffer, CLIENT_PUZZLE) == 0) || ((strcmp(buffer, CLIENT_PUZZLE_RETRY) == 0))) {
-            std::cout<<"SERVER: "<<buffer<<std::endl;
+            //Retrieve all the data for the puzzle
+
+            //TODO read all the data from the server and parse it
+            char puzzleBuffer[2048] = {0};
+            int bytesReceived;
+            //target hash
+            bytesReceived = recv(sock, puzzleBuffer, 2048,0);
+            puzzleBuffer[bytesReceived] = '\0';
+            std::string targetHash(puzzleBuffer);
+
+
+            std::cout<<"Target Hash: " + targetHash<<std::endl;
+
+
             //Solve puzzle and send out
             send(sock, CLIENT_PUZZLE_SOLUTION, strlen(CLIENT_PUZZLE_SOLUTION), 0);
             std::cout<<"SENT: CLIENT PUZZLE"<<std::endl;

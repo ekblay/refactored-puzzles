@@ -43,10 +43,13 @@ void * socketThread(void *socket)
             ClientPuzzle cr = {};
             cr.init_clientPuzzle();
             std::cout<<"CLIENT: ACK HELLO"<<std::endl;
-            if(overloaded) { // if system is overloaded send CLIENT_PUZZLE
-                send(newSocket, HANDSHAKE_COMPLETE, strlen(CLIENT_PUZZLE), 0);
+            if(1) { // if system is overloaded send CLIENT_PUZZLE
+                send(newSocket, CLIENT_PUZZLE, strlen(CLIENT_PUZZLE), 0);
+              //TODO Concatenate the client puzzle into one huge string and send in one swoop
+                //Send target hash
+                sleep(2);
+                send(newSocket, cr.getPuzzlePayload().c_str(), strlen(cr.getPuzzlePayload().c_str()), 0);
                 issued_puzzle = 1;
-                //TODO Send out client puzzle
                 std::cout<<"SENT: CLIENT PUZZLE"<<std::endl;
             } else { //else send HANDSHAKE_COMPLETE
                 send(newSocket, HANDSHAKE_COMPLETE, strlen(HANDSHAKE_COMPLETE), 0);
