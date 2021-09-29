@@ -7,7 +7,6 @@
 #define PORT 8080
 
 //utils
-#include "messages.h"
 #include "clientCrypto.h"
 using namespace std;
 
@@ -106,28 +105,28 @@ int main(int argc, char const *argv[]) {
             //TODO include the number of data elements coming in
             size_t pos = 0;
             string token;
-            array<string,4> dat; int i =0;
+            array<string,6> dat; int i =0;
             while ((pos = dataBuf.find(DELIMITER)) != string::npos) {
                 token = dataBuf.substr(0, pos);
                 dat[i] = token; i++;
                 dataBuf.erase(0, pos + DELIMITER.length());
             }
             dat[i] = dataBuf;
-            string solution = dat[0];
-            string clientPuzzle =dat[1] ;
-            int charactersMissing = stoi(dat[2]);
-            string date = dat[3];
+            //record data
+            string solution = dat[1];
+            string clientPuzzle =dat[2] ;
+            int indexOfMask = stoi(dat[3]);
+            string date = dat[4];
+            int maxIterations = stoi(dat [5]);
+            //Solve solution
             ClientCrypto clientCrypto = {};
-            clientCrypto.calculateSolution(clientPuzzle,solution, charactersMissing);
-//            cout<<"solution: " + solution<<endl;
-//            cout<<"puzzle: " + clientPuzzle<<endl;
-//            cout<<"rounds: " + to_string(rounds)<<endl;
-//            cout<<"date: " + date<<endl;
+            clientCrypto.setDate(date);
+            string solvedPuzzle = clientCrypto.calculateSolution(clientPuzzle,solution, indexOfMask,maxIterations);
 
-
-            //Solve puzzle and send out
+            //send out
             send(sock,(MESSAGE_HEADER + CLIENT_PUZZLE_SOLUTION).c_str(),(MESSAGE_HEADER + CLIENT_PUZZLE_SOLUTION).length() , 0);
-            cout<<"SENT: CLIENT PUZZLE"<<endl;
+            send(sock, (DATA+clientCrypto.getPuzzleSolutionPayload()).c_str(),(DATA+clientCrypto.getPuzzleSolutionPayload()).length(), 0);
+            cout<<"SENT: CLIENT PUZZLE SOLUTION"<<endl;
         }
 
         if(stringBuf.compare(INVALID_REQUEST) == 0) {

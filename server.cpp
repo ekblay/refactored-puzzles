@@ -8,8 +8,8 @@
 
 
 //utils
-#include "messages.h"
 #include "crypt.h"
+
 #define PORT 8080
 using namespace std;
 ClientPuzzle cr = {};
@@ -74,6 +74,7 @@ void * socketThread(void *socket)
 
         if (stringBuf == CLIENT_PUZZLE_SOLUTION) {
             cout<<"CLIENT: CLIENT PUZZLE SOLUTION"<<endl;
+            //TODO parse extra piece
             if(authenticated)  {
                 // Check solution if correct send HANDSHAKE_COMPLETE
                 //else send CLIENT_PUZZLE_RETRY
@@ -104,7 +105,6 @@ void * socketThread(void *socket)
         }
 
         if(stringBuf == INVALID_REQUEST) {
-
             //TODO check if authenticated
             cout<<"CLIENT: INVALID REQUEST"<<endl;
             send(newSocket, (MESSAGE_HEADER + SERVER_HELLO).c_str(), (MESSAGE_HEADER + SERVER_HELLO).length(), 0);

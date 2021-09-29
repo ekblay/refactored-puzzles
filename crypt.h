@@ -16,11 +16,10 @@
 #include <bitset>
 #include <sstream>
 #include <array>
-
-#define HASH_ROUNDS  1
+#include "messages.h"
+#define MAX_ROUNDS  1
 #define PUZZLE_STRENGTH 16
 using namespace std;
-char SEPARATOR = '~';
 class ClientPuzzle {
 private:
     string serverSideSecret;
@@ -31,8 +30,6 @@ private:
     string clientPuzzleHex;  //The masked puzzle to be given to client
     int numberOfMissingCharacters; //The number of characters masked
 
-    array<char,16> hexValues = {'a','b','c','d','e','f','0','1','2','3','4','5','6','7','8','9'};
-
 
 
     string computeHash(int rounds);
@@ -42,8 +39,6 @@ private:
 
     //Helper
     string hash256(const string& string);
-    string bruteForceSearch( string word, int currentPosition, int lastIndex, string puzzle, string solution,int rounds);
-    int hashCheck(string guess, string solution, int rounds);
 
 public:
     void init_clientPuzzle();
@@ -54,10 +49,8 @@ public:
     int getNumberOfMissingCharacters() const;
 
 
-
     string getPuzzlePayload();
-    string calculateSolution(string puzzle, string solution, int numOfMissingCharacters);
-
+    int verifySolution(const string& solvedPuzzle, const string& date);
 };
 
 
@@ -67,7 +60,7 @@ public:
 void ClientPuzzle::init_clientPuzzle() {
     serverSideSecret = generateServerSideSecret();
     date = generateDateStamp();
-    hashOutput = computeHash(HASH_ROUNDS);
+    hashOutput = computeHash(MAX_ROUNDS);
     clientPuzzleHex = generateClientPuzzle();
 
     cout << "Server Side secret : " + serverSideSecret << endl;
@@ -187,57 +180,15 @@ const string &ClientPuzzle::getDate() const {
 }
 
 string ClientPuzzle::getPuzzlePayload() {
-    //TODO add number of items coming in, and total rounds
-    return hashOutput + SEPARATOR +
-           clientPuzzleHex +  SEPARATOR +
-           to_string(numberOfMissingCharacters) +  SEPARATOR +
-           date;
+    return to_string(5) + DELIMITER + //Number of data items coming in
+            hashOutput + DELIMITER +  //solution
+           clientPuzzleHex +  DELIMITER + //puzzle_to_solve
+           to_string(numberOfMissingCharacters) +  DELIMITER + //maskLength
+            to_string(MAX_ROUNDS) + DELIMITER +  //Max hash iterations
+           date; //date
 }
 
-string ClientPuzzle::calculateSolution(string puzzle, string solution, int numOfMissingCharacters) {
-    //Generate base word
-    string word;
-    for(int n = 0; n < numberOfMissingCharacters; n++) {
-        word ='0' + word;
-    }
-    //chop of puzzle
-    puzzle = puzzle.substr(numberOfMissingCharacters);
-    string result = bruteForceSearch(word,0,numOfMissingCharacters,puzzle,solution,1);
-    return  result + puzzle;
+int ClientPuzzle::verifySolution(const string& solvedPuzzle, const string& returnedDate) {
+    //date and puzzle should be the same
+    return (date == returnedDate) && (solvedPuzzle == clientPuzzleHex);
 }
-
-string ClientPuzzle::bruteForceSearch(string word, int currentPosition, int lastIndex, string puzzle, string solution,int rounds) {
-    if(currentPosition < lastIndex) {
-        for (int i = 0; i < hexValues.size(); i++) {
-            word[currentPosition] = hexValues[i];
-            if(hashCheck(word+puzzle,solution,rounds)) {
-                return word;
-            } else{
-             string res =  bruteForceSearch(word, currentPosition + 1, lastIndex, puzzle, solution, rounds);
-             if(res!="0") {
-                 return res;
-             }
-            }
-        }
-        return "0";
-    }
-    return "0";
-}
-
-int ClientPuzzle::hashCheck(string guess, string solution, int rounds) {
-    int current = 1;
-
-    //hash first iteration
-    string result = hash256(guess);
-    do {
-        if(result.compare(solution) ==0) { //Check if result is equal to solution
-            return 1;
-        }
-        result = hash256(result);  //compute another digest
-        current++;
-    } while (current <= rounds);
-
-    return 0; //return 0 if solution is not found here
-}
-
-
