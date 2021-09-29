@@ -67,9 +67,6 @@ int main(int argc, char const *argv[]) {
         stringBuf = stringBuf.substr(1, length);
 
 
-
-
-
         //SERVER_HELLO
         if (stringBuf.compare(SERVER_HELLO) == 0) {
             std::cout<<"SERVER: SERVER HELLO"<<std::endl;
@@ -118,7 +115,7 @@ int main(int argc, char const *argv[]) {
             dat[i] = dataBuf;
             std::string solution = dat[0];
             std::string clientPuzzle =dat[1] ;
-            int rounds = stoi(dat[2]);
+            int charactersMissing = stoi(dat[2]);
             std::string date = dat[3];
 
 //            std::cout<<"solution: " + solution<<std::endl;
