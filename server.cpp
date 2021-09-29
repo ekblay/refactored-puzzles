@@ -11,6 +11,7 @@
 #include "messages.h"
 #include "crypt.h"
 #define PORT 8080
+using namespace std;
 ClientPuzzle cr = {};
 
 
@@ -26,22 +27,22 @@ void * socketThread(void *socket)
 
     int numBytes;
     char buffer[1024];
-    std::string stringBuf;
-    std::string prefix;
+    string stringBuf;
+    string prefix;
 //Initial read
-    std::cout <<"********************************" <<std::endl;
+    cout <<"********************************" <<endl;
     while (not_done) {
         //
         numBytes = recv(newSocket, buffer, 1024,0);
         //Read up to the end of the size of the string read
         buffer[numBytes] = '\0';
 
-        stringBuf = std::string (buffer);
+        stringBuf = string (buffer);
         prefix = stringBuf.substr(0,1);
          if (prefix != MESSAGE_HEADER) {
              send(newSocket, (MESSAGE_HEADER + INVALID_REQUEST).c_str(), (MESSAGE_HEADER + INVALID_REQUEST).length(),
                   0);
-             std::cout << "SENT: INVALID REQUEST\n" << std::endl;
+             cout << "SENT: INVALID REQUEST\n" << endl;
          }
 
          //Read the message after the MESSAGE HEADER
@@ -49,30 +50,30 @@ void * socketThread(void *socket)
          stringBuf = stringBuf.substr(1, length);
 
         if (stringBuf == CLIENT_HELLO) { //CLIENT_HELLO
-            std::cout<<"CLIENT: CLIENT HELLO"<<std::endl;
+            cout<<"CLIENT: CLIENT HELLO"<<endl;
             send(newSocket, (MESSAGE_HEADER + SERVER_HELLO).c_str(), (MESSAGE_HEADER + SERVER_HELLO).length(), 0);
-            std::cout<<"SENT: SENT SERVER HELLO"<<std::endl;
+            cout<<"SENT: SENT SERVER HELLO"<<endl;
         }
 
         //ACK after sending the SERVER HELLO to acknowledge receipt and ready for request
         if (stringBuf == ACK_HELLO) {
-            std::cout<<"CLIENT: ACK HELLO"<<std::endl;
+            cout<<"CLIENT: ACK HELLO"<<endl;
             if(1) { // if system is overloaded send CLIENT_PUZZLE
                 send(newSocket, (MESSAGE_HEADER + CLIENT_PUZZLE).c_str(), (MESSAGE_HEADER + CLIENT_PUZZLE).length(), 0);
 
                 //Send target hash
                 send(newSocket, (DATA + cr.getPuzzlePayload()).c_str(), (DATA + cr.getPuzzlePayload()).length(), 0);
                 issued_puzzle = 1;
-                std::cout<<"SENT: CLIENT PUZZLE"<<std::endl;
+                cout<<"SENT: CLIENT PUZZLE"<<endl;
             } else { //else send HANDSHAKE_COMPLETE
                 send(newSocket, (MESSAGE_HEADER + HANDSHAKE_COMPLETE).c_str(), (MESSAGE_HEADER + HANDSHAKE_COMPLETE).length(), 0);
                 authenticated = 1;
-                std::cout<<"SENT: HANDSHAKE COMPLETE"<<std::endl;
+                cout<<"SENT: HANDSHAKE COMPLETE"<<endl;
             }
         }
 
         if (stringBuf == CLIENT_PUZZLE_SOLUTION) {
-            std::cout<<"CLIENT: CLIENT PUZZLE SOLUTION"<<std::endl;
+            cout<<"CLIENT: CLIENT PUZZLE SOLUTION"<<endl;
             if(authenticated)  {
                 // Check solution if correct send HANDSHAKE_COMPLETE
                 //else send CLIENT_PUZZLE_RETRY
@@ -81,43 +82,43 @@ void * socketThread(void *socket)
                     //TODO if puzzle is correct send retry else authenticate
                     authenticated = 1;
                     issued_puzzle = 0;
-                    std::cout<<"SENT: HANDSHAKE COMPLETE"<<std::endl;
+                    cout<<"SENT: HANDSHAKE COMPLETE"<<endl;
                 }
             }
-            std::cout<<"SENT: INVALID REQUEST"<<std::endl;
+            cout<<"SENT: INVALID REQUEST"<<endl;
         }
 
         //Client asks for resource, wait 5s as then respond
         if ( stringBuf == GET_RESOURCE) {
-            std::cout <<"CLIENT: GET RESOURCE"<<std::endl;
+            cout <<"CLIENT: GET RESOURCE"<<endl;
             if(authenticated) {
                 //send some random stuff
                 sleep(2);
                 send(newSocket, (MESSAGE_HEADER + RESOURCE).c_str(),(MESSAGE_HEADER + RESOURCE).length() , 0);
-                std::cout << "SENT: RESOURCE" << std::endl;
+                cout << "SENT: RESOURCE" << endl;
             } else {
 
                 send(newSocket,(MESSAGE_HEADER + INVALID_REQUEST).c_str(), (MESSAGE_HEADER + INVALID_REQUEST).length(), 0);
-                std::cout << "SENT: INVALID REQUEST\n" << std::endl;
+                cout << "SENT: INVALID REQUEST\n" << endl;
             }
         }
 
         if(stringBuf == INVALID_REQUEST) {
 
             //TODO check if authenticated
-            std::cout<<"CLIENT: INVALID REQUEST"<<std::endl;
+            cout<<"CLIENT: INVALID REQUEST"<<endl;
             send(newSocket, (MESSAGE_HEADER + SERVER_HELLO).c_str(), (MESSAGE_HEADER + SERVER_HELLO).length(), 0);
-            std::cout<<"SENT: INVALID REQUEST"<<std::endl;
+            cout<<"SENT: INVALID REQUEST"<<endl;
         }
 
         if (stringBuf == END_SESSION) {
-            std::cout<<"CLIENT: END SESSION"<<std::endl;
+            cout<<"CLIENT: END SESSION"<<endl;
             not_done = 0;
-            std::cout<<"Server has ended session with client"<<std::endl;
+            cout<<"Server has ended session with client"<<endl;
         }
 
     }
-    std::cout<<"********************************\n"<<std::endl;
+    cout<<"********************************\n"<<endl;
     return 0;
 }
 
@@ -162,13 +163,13 @@ int main(int argc, char const *argv[]) {
     int i = 0;
 
     cr.init_clientPuzzle();
-    std::cout<<"Listening"<<std::endl;
+    cout<<"Listening"<<endl;
     while(1) {
         if ((new_socket = accept(server_fd, (struct sockaddr *) &address, (socklen_t * ) & addrlen)) < 0) {
             perror("accept");
             exit(EXIT_FAILURE);
         } else {
-            std::cout<<"\nNew Client has been accepted"<<std::endl;
+            cout<<"\nNew Client has been accepted"<<endl;
         }
 
         if( pthread_create(&tid[i++], NULL, socketThread, &new_socket) != 0 ) {
@@ -176,7 +177,7 @@ int main(int argc, char const *argv[]) {
             exit(EXIT_FAILURE);
         }
 
-        std::cout<<"Creating new thread for client"<<std::endl;
+        cout<<"Creating new thread for client"<<endl;
         if( i >= 50)
         {
             i = 0;

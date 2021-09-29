@@ -8,8 +8,8 @@
 
 //utils
 #include "messages.h"
-#include "crypt.h"
-
+#include "clientCrypto.h"
+using namespace std;
 
 int main(int argc, char const *argv[]) {
     int sock = 0;
@@ -40,20 +40,20 @@ int main(int argc, char const *argv[]) {
     int numBytes;
     int hasData =0;
     char buffer[1024] = {0};
-    std::string stringBuf;
-    std::string dataBuf;
-    std::string prefix;
+    string stringBuf;
+    string dataBuf;
+    string prefix;
     send(sock,(MESSAGE_HEADER + CLIENT_HELLO).c_str(), (MESSAGE_HEADER + CLIENT_HELLO).length(), 0);
-    std::cout<<"SENT: CLIENT HELLO"<<std::endl;
+    cout<<"SENT: CLIENT HELLO"<<endl;
     while (1) {
         numBytes = recv(sock, buffer, 1024,0);
         buffer[numBytes] = '\0';
 
-        stringBuf = std::string (buffer);
+        stringBuf = string (buffer);
         prefix = stringBuf.substr(0,1);
         if (prefix != MESSAGE_HEADER) {
             send(sock, (MESSAGE_HEADER + INVALID_REQUEST).c_str(), (MESSAGE_HEADER + INVALID_REQUEST).length(),0);
-            std::cout << "SENT: INVALID REQUEST\n" << std::endl;
+            cout << "SENT: INVALID REQUEST\n" << endl;
         }
 
         //check for data
@@ -69,27 +69,27 @@ int main(int argc, char const *argv[]) {
 
         //SERVER_HELLO
         if (stringBuf.compare(SERVER_HELLO) == 0) {
-            std::cout<<"SERVER: SERVER HELLO"<<std::endl;
+            cout<<"SERVER: SERVER HELLO"<<endl;
             send(sock, (MESSAGE_HEADER + ACK_HELLO).c_str(), (MESSAGE_HEADER + ACK_HELLO).length(), 0);
-            std::cout<<"SENT: ACK HELLO"<<std::endl;
+            cout<<"SENT: ACK HELLO"<<endl;
         }
 
         //ACK after sending the SERVER HELLO to acknowledge receipt and ready for request
         if (stringBuf.compare(HANDSHAKE_COMPLETE) == 0) {
-            std::cout<<"SERVER: HANDSHAKE COMPLETE"<<std::endl;
+            cout<<"SERVER: HANDSHAKE COMPLETE"<<endl;
             send(sock, (MESSAGE_HEADER + GET_RESOURCE).c_str(), (MESSAGE_HEADER + GET_RESOURCE).length(), 0);
-            std::cout<<"SENT: GET RESOURCE"<<std::endl;
+            cout<<"SENT: GET RESOURCE"<<endl;
         }
 
         if(stringBuf.compare(RESOURCE) == 0) {
-            std::cout<<"SERVER: RESOURCE"<<std::endl;
+            cout<<"SERVER: RESOURCE"<<endl;
             send(sock, (MESSAGE_HEADER + END_SESSION).c_str(), (MESSAGE_HEADER + END_SESSION).length(), 0);
-            std::cout<<"*************SESSION ENDED*************"<<std::endl;
+            cout<<"*************SESSION ENDED*************"<<endl;
             return 0;
         }
 
         if((stringBuf.compare(CLIENT_PUZZLE)) == 0 || (stringBuf.compare(CLIENT_PUZZLE_RETRY)) == 0) {
-            std::cout<<"SENT: " + stringBuf<<std::endl;
+            cout<<"SENT: " + stringBuf<<endl;
             //Retrieve all the data for the puzzle
             if(!hasData) {
                 char puzzleBuffer[2048] = {0};
@@ -97,7 +97,7 @@ int main(int argc, char const *argv[]) {
                 //target hash
                 bytesReceived = recv(sock, puzzleBuffer, 2048, 0);
                 puzzleBuffer[bytesReceived] = '\0';
-                dataBuf = std::string(puzzleBuffer);
+                dataBuf = string(puzzleBuffer);
                 hasData = 0;
             }
             //Strip off header
@@ -105,35 +105,36 @@ int main(int argc, char const *argv[]) {
 
             //TODO include the number of data elements coming in
             size_t pos = 0;
-            std::string token;
-            std::array<std::string,4> dat; int i =0;
-            while ((pos = dataBuf.find(DELIMITER)) != std::string::npos) {
+            string token;
+            array<string,4> dat; int i =0;
+            while ((pos = dataBuf.find(DELIMITER)) != string::npos) {
                 token = dataBuf.substr(0, pos);
                 dat[i] = token; i++;
                 dataBuf.erase(0, pos + DELIMITER.length());
             }
             dat[i] = dataBuf;
-            std::string solution = dat[0];
-            std::string clientPuzzle =dat[1] ;
+            string solution = dat[0];
+            string clientPuzzle =dat[1] ;
             int charactersMissing = stoi(dat[2]);
-            std::string date = dat[3];
-
-//            std::cout<<"solution: " + solution<<std::endl;
-//            std::cout<<"puzzle: " + clientPuzzle<<std::endl;
-//            std::cout<<"rounds: " + std::to_string(rounds)<<std::endl;
-//            std::cout<<"date: " + date<<std::endl;
+            string date = dat[3];
+            ClientCrypto clientCrypto = {};
+            clientCrypto.calculateSolution(clientPuzzle,solution, charactersMissing);
+//            cout<<"solution: " + solution<<endl;
+//            cout<<"puzzle: " + clientPuzzle<<endl;
+//            cout<<"rounds: " + to_string(rounds)<<endl;
+//            cout<<"date: " + date<<endl;
 
 
             //Solve puzzle and send out
             send(sock,(MESSAGE_HEADER + CLIENT_PUZZLE_SOLUTION).c_str(),(MESSAGE_HEADER + CLIENT_PUZZLE_SOLUTION).length() , 0);
-            std::cout<<"SENT: CLIENT PUZZLE"<<std::endl;
+            cout<<"SENT: CLIENT PUZZLE"<<endl;
         }
 
         if(stringBuf.compare(INVALID_REQUEST) == 0) {
-            std::cout<<"SERVER: INVALID REQUEST"<<std::endl;
+            cout<<"SERVER: INVALID REQUEST"<<endl;
             //On an invalid request restart the client hello
             send(sock,(MESSAGE_HEADER + CLIENT_HELLO).c_str(), (MESSAGE_HEADER + CLIENT_HELLO).length() , 0);
-            std::cout<<"SENT: CLIENT HELLO"<<std::endl;
+            cout<<"SENT: CLIENT HELLO"<<endl;
         }
 
     }
