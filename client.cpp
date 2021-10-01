@@ -53,14 +53,14 @@ int main(int argc, char const *argv[]) {
         if (prefix != MESSAGE_HEADER) {
             send(sock, (MESSAGE_HEADER + INVALID_REQUEST).c_str(), (MESSAGE_HEADER + INVALID_REQUEST).length(),0);
             cout << "SENT: INVALID REQUEST\n" << endl;
-        }
+        } else {
 
-        //check for data
-        if(stringBuf.find(DATA) != -1) {
-            dataBuf = stringBuf.substr( stringBuf.find(DATA));
-            hasData =1;
+            //DATA pieces may together with the message header so check for that
+            if (stringBuf.find(DATA) != -1) {
+                dataBuf = stringBuf.substr(stringBuf.find(DATA));
+                hasData = 1;
+            }
         }
-
         //Read the message after the MESSAGE HEADER
         unsigned long length = (stringBuf.find(DATA) != -1) ? stringBuf.find(DATA)-1 : stringBuf.length();
         stringBuf = stringBuf.substr(1, length);
@@ -88,7 +88,7 @@ int main(int argc, char const *argv[]) {
         }
 
         if((stringBuf.compare(CLIENT_PUZZLE)) == 0 || (stringBuf.compare(CLIENT_PUZZLE_RETRY)) == 0) {
-            cout<<"SENT: " + stringBuf<<endl;
+            cout<<"SERVER: " + stringBuf<<endl;
             //Retrieve all the data for the puzzle
             if(!hasData) {
                 char puzzleBuffer[2048] = {0};
@@ -102,13 +102,14 @@ int main(int argc, char const *argv[]) {
             //Strip off header
             dataBuf.erase(0,MESSAGE_HEADER.length());
 
-            //TODO include the number of data elements coming in
             size_t pos = 0;
             string token;
             array<string,6> dat; int i =0;
             while ((pos = dataBuf.find(DELIMITER)) != string::npos) {
                 token = dataBuf.substr(0, pos);
-                dat[i] = token; i++;
+                dat[i] = token;
+
+                i++;
                 dataBuf.erase(0, pos + DELIMITER.length());
             }
             dat[i] = dataBuf;
@@ -116,8 +117,9 @@ int main(int argc, char const *argv[]) {
             string solution = dat[1];
             string clientPuzzle =dat[2] ;
             int indexOfMask = stoi(dat[3]);
-            string date = dat[4];
-            int maxIterations = stoi(dat [5]);
+            int maxIterations = stoi(dat [4]);
+            string date = dat[5];
+
             //Solve solution
             ClientCrypto clientCrypto = {};
             clientCrypto.setDate(date);
@@ -131,9 +133,18 @@ int main(int argc, char const *argv[]) {
 
         if(stringBuf.compare(INVALID_REQUEST) == 0) {
             cout<<"SERVER: INVALID REQUEST"<<endl;
-            //On an invalid request restart the client hello
+            buffer[0] = '\0';
+            stringBuf = "";
+            //On an invalid request restart with client hello
             send(sock,(MESSAGE_HEADER + CLIENT_HELLO).c_str(), (MESSAGE_HEADER + CLIENT_HELLO).length() , 0);
             cout<<"SENT: CLIENT HELLO"<<endl;
+        }
+
+        if(stringBuf.compare(END_SESSION) == 0) {
+            cout<<"SERVER: END SESSION"<<endl;
+            cout<<"*************SERVER ENDED THIS SESSION*************"<<endl;
+            return 0;
+
         }
 
     }

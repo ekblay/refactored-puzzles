@@ -10,14 +10,14 @@
 #include <ctime>
 #include <cstdio>
 #include <iostream>
-#include <string>
 #include <cstring>
 #include <cmath>
 #include <bitset>
 #include <sstream>
 #include <array>
 #include "messages.h"
-#define MAX_ROUNDS  1
+
+#define MAX_ITERATIONS  5
 #define PUZZLE_STRENGTH 16
 using namespace std;
 class ClientPuzzle {
@@ -32,7 +32,7 @@ private:
 
 
 
-    string computeHash(int rounds);
+    string computeHash();
     string generateClientPuzzle();
     string generateServerSideSecret();
     string generateDateStamp();
@@ -60,14 +60,8 @@ public:
 void ClientPuzzle::init_clientPuzzle() {
     serverSideSecret = generateServerSideSecret();
     date = generateDateStamp();
-    hashOutput = computeHash(MAX_ROUNDS);
+    hashOutput = computeHash();
     clientPuzzleHex = generateClientPuzzle();
-
-    cout << "Server Side secret : " + serverSideSecret << endl;
-    cout << "Date : " + date << endl;
-    cout << "Hash : " + hashOutput << endl;
-    cout << "Client Puzzle raw hex: " + rawHashedPuzzleHex << endl;
-    cout << "Client puzzle masked: " + clientPuzzleHex<< endl;
 }
 
 string ClientPuzzle::generateDateStamp() {
@@ -109,7 +103,7 @@ string ClientPuzzle::generateClientPuzzle() {
     return str;
 }
 
-string ClientPuzzle::computeHash(int rounds) {
+string ClientPuzzle::computeHash() {
     /*
      * Generate initial hash value from:
      * SERVER_SIDE_SECRET and
@@ -125,7 +119,6 @@ string ClientPuzzle::computeHash(int rounds) {
     for(int k = 0; k < SHA256_DIGEST_LENGTH; k++) {
         rawHashedPuzzleBin = rawHashedPuzzleBin + (bitset<8> {digest[k]}).to_string();
     }
-
     //Convert the decimal digest to a stringed hex value
     char mdString[SHA256_DIGEST_LENGTH*2+1];
     for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
@@ -134,7 +127,8 @@ string ClientPuzzle::computeHash(int rounds) {
     rawHashedPuzzleHex = string(mdString);
     string hash = hash256(rawHashedPuzzleHex);
 
-
+    srand( (unsigned)time(0) );
+    int rounds = 1 + (rand() % MAX_ITERATIONS);
     //hash based on number of iteration rounds
     int k  = 1;
     while (k < rounds) {
@@ -182,13 +176,13 @@ const string &ClientPuzzle::getDate() const {
 string ClientPuzzle::getPuzzlePayload() {
     return to_string(5) + DELIMITER + //Number of data items coming in
             hashOutput + DELIMITER +  //solution
-           clientPuzzleHex +  DELIMITER + //puzzle_to_solve
-           to_string(numberOfMissingCharacters) +  DELIMITER + //maskLength
-            to_string(MAX_ROUNDS) + DELIMITER +  //Max hash iterations
+           clientPuzzleHex + DELIMITER + //puzzle_to_solve
+           to_string(numberOfMissingCharacters) + DELIMITER + //maskLength
+            to_string(MAX_ITERATIONS) + DELIMITER +  //Max hash iterations
            date; //date
 }
 
 int ClientPuzzle::verifySolution(const string& solvedPuzzle, const string& returnedDate) {
-    //date and puzzle should be the same
-    return (date == returnedDate) && (solvedPuzzle == clientPuzzleHex);
+    //We just check against the stored hash or we can recompute
+    return cout <<(date == returnedDate) && (solvedPuzzle == rawHashedPuzzleHex);
 }
