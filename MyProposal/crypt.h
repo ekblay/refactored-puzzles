@@ -17,6 +17,7 @@
 #include <array>
 #include "messages.h"
 
+#include "grail-adapter/include.h"
 #define MAX_ITERATIONS  5
 #define PUZZLE_STRENGTH 16
 using namespace std;
