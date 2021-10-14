@@ -12,9 +12,6 @@
 
 #define PORT 8080
 using namespace std;
-
-
-
 void * socketThread(void *socket)
 {
     int newSocket = *((int *)socket);
@@ -212,49 +209,53 @@ int main(int argc, char const *argv[]) {
     }
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons( PORT );
+    address.sin_port = htons(PORT);
 
     // Forcefully attaching socket to the port 8080
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address))<0) {
         perror("bind failed");
         exit(EXIT_FAILURE);
     }
-    if (listen(server_fd, 40) < 0)
-    {
+    if (listen(server_fd, 40) < 0) {
         perror("listen");
         exit(EXIT_FAILURE);
     }
 
 
-    /*
-     * Begin handling client requests
-     */
-    pthread_t tid[60];
+   // Socket has been set up now...set up threads
+    int numThreads = 50;
+    pthread_t tid[numThreads];
     int i = 0;
 
-    cout<<"Listening"<<endl;
-    while(1) {
+    auto start = std::chrono::high_resolution_clock::now();
+    //cout<<"Listening"<<endl;
+    int numClients = 0
+    int limit = 100;  //Collect this value from args
+    while(numClients < 100) {
         if ((new_socket = accept(server_fd, (struct sockaddr *) &address, (socklen_t * ) & addrlen)) < 0) {
             perror("accept");
             exit(EXIT_FAILURE);
-        } else {
-            cout<<"\nNew Client has been accepted"<<endl;
-        }
-
+        } //else {
+            //cout<<"\nNew Client has been accepted"<<endl;
+        //}
+        numClients ++;
         if( pthread_create(&tid[i++], NULL, socketThread, &new_socket) != 0 ) {
             printf("Failed to create thread\n");
             exit(EXIT_FAILURE);
         }
 
-        cout<<"Creating new thread for client"<<endl;
-        if( i >= 50)
-        {
+        if( i >= numThreads) {
+            //if we reach our limits of 50 use older threads in the "thread pool"
             i = 0;
-            while(i < 50) {
+            while(i < numThreads) {
                 pthread_join(tid[i++],NULL);
             }
             i = 0;
         }
     }
+
+    auto elapsed = std::chrono::high_resolution_clock::now() - start;
+    long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+    cout << to_string(numClients)+ ";"+ to_string(microseconds)<< endl; //convert to seconds
     return 0;
 }

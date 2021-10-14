@@ -6,14 +6,16 @@ string ClientPuzzle::filenamePrefix = string("puzzles/puzzle_fm_");
 
 
 void ClientPuzzle::init_clientPuzzle() {
+    srand((unsigned)time(0));
     runner();
+    loadNFAFromFile();
 }
 
 void ClientPuzzle:: runner() {
     // auto start = std::chrono::high_resolution_clock::now();
     cout << " *********Creating "<< to_string(TOTAL_NUMBER_OF_PUZZLES)<<" puzzles ********* "<<endl;
     int remainder = TOTAL_NUMBER_OF_PUZZLES;
-    int iteration = 1;
+    int iteration = 0;
     printProgressBar(0.0);
     while(remainder>0) {
         //Update the progress bar
@@ -63,23 +65,22 @@ void ClientPuzzle::generateAutomataFiles(int end, int iteration) {
         finiteLanguage.clear();
         fm.clear();
     }
+    grail::fm<char> nfa  =grail::NFA::dfatonfa(dfa);
     //Write to file
-    grail::IO::write_dfa_file(dfa, filenamePrefix + to_string(iteration));
+    grail::IO::write_nfa_file(nfa, filenamePrefix + to_string(iteration));
 
     //Release all temp objects
     grailString.clear_all();
     fm.clear_all();
 }
 
+
 string ClientPuzzle::generateEntry() {
     string secret = generateServerSideSecret();
-
     string inputHash = hash256("SHA256" + secret);
     string output = generateMessageDigest(inputHash);
-
     //The entry would be the concatenation of the input has hash and its message digest
-    //Size is for the hash input 64
-
+    //Size for the hash input is 64
     return inputHash + output;
 }
 string ClientPuzzle::generateMessageDigest(string inputHash) {
@@ -94,7 +95,6 @@ string ClientPuzzle::generateMessageDigest(string inputHash) {
     }
     return hash;
 }
-
 void ClientPuzzle::convertGrailString(grail::string<char> grailString, string &target) {
     for(int index = 0;  index < grailString.size(); index++)
         target += grailString[index];
@@ -143,53 +143,55 @@ void ClientPuzzle::printProgressBar(float progress) {
 }
 
 
-Payload ClientPuzzle::loadDFAFromFile() {
-    // auto start = std::chrono::high_resolution_clock::now();
-    int fileCount = 0;
+void ClientPuzzle::loadNFAFromFile() {
+    cout<<"***************Loading automata into memory ****************"<<endl;
+    int fileCount = (TOTAL_NUMBER_OF_PUZZLES/PUZZLES_PER_FILE) ;
     std::string path = "./puzzles";
-    experimental::filesystem::directory_iterator dir = experimental::filesystem::directory_iterator(path);
-    for (const auto &entry : dir)
-        fileCount++;
+    printProgressBar(0.0);
+    float progress;
+    grail::set<grail::string<char>> set;
+    grail::fm<char> nfa;
+    for(int i =0; i < fileCount; i++) {
+        nfa = grail::IO::read_nfa_file(filenamePrefix + to_string(i));
+        nfas[i] = nfa;
+        nfa.enumerate(1, set);
+        results[i] = set;
+        progress = (i/(float )fileCount);
+        printProgressBar(progress);
 
-    //Select a random file
-    srand((unsigned)time(0) );
-    int fileNumber = 1 + (rand() % MAX_ITERATIONS);
-    grail::fm<char> dfa = grail::IO::read_dfa_file(filenamePrefix+ to_string(fileNumber));
-    grail::set<grail::string<char> > results;
-    int size = dfa.enumerate(1, results);
-
-//Time analysis
-//    auto elapsed = std::chrono::high_resolution_clock::now() - start;
-//    long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
-//    cout <<"Time elapsed: " + to_string(microseconds/1000000)<< endl; //convert to seconds
-
-    srand((unsigned)time(0) );
-    int puzzleNumber = 1 + (rand() % size);
+        nfa.clear();
+        set.clear();
+    }
+    cout<< endl;
+}
+Payload ClientPuzzle::fetchRandomPuzzle() {
+    int puzzleNumber =  (rand() % PUZZLES_PER_FILE);
+    int fileNumber = (rand() % results.size());
     std::string  str;
-    convertGrailString(results[puzzleNumber], str);
-
-    Payload payload = Payload(fileNumber, str.substr(0,64), str.substr(65));
+    convertGrailString(results[fileNumber][puzzleNumber], str);
+    string clientPuzzle;
+    int numMissingCharacters = generateClientPuzzle( str.substr(0,64), clientPuzzle);
+    Payload payload = Payload(fileNumber, clientPuzzle, numMissingCharacters, str.substr(65));
     return payload;
 }
-
 /*********************************************************************
  * Public functions
  **********************************************************************/
 
-string ClientPuzzle::generateClientPuzzle(string puzzleHex) {
-    string str;
+int ClientPuzzle::generateClientPuzzle(string puzzleHex, string &maskedPuzzle) {
+
     //Cut off portion to be shown to be given to client
     int indexLastByte = puzzleHex.length() - floor((PUZZLE_STRENGTH/4));
     int numberOfMissingCharacters = puzzleHex.length() - indexLastByte;
-    str.assign(puzzleHex.substr(numberOfMissingCharacters));
+    maskedPuzzle.assign(puzzleHex.substr(numberOfMissingCharacters));
     //create a mask for n = numberOfMissingCharacters
     for(int n = 0; n < numberOfMissingCharacters; n++) {
-        str ='0' + str;
+        maskedPuzzle ='0' + maskedPuzzle;
     }
-    return str;
+    return numberOfMissingCharacters;
 }
 
-int ClientPuzzle::verifySolution(const string& solvedPuzzle, const string& returnedDate) {
+int ClientPuzzle::verifySolution(const string& solvedPuzzle, const string& index) {
     //We just check against the stored hash or we can recompute
     //Check if word belongs to the language.
     return 0;
@@ -198,17 +200,61 @@ int ClientPuzzle::verifySolution(const string& solvedPuzzle, const string& retur
 string ClientPuzzle::getPuzzlePayload() {
 
     //TODO loadPuzzle from DFA and return it
-
-    return ""; //client puzzle + solution + file_index + numberOfMissingCharacters
+    Payload payload  = fetchRandomPuzzle();
+    return to_string(5) + DELIMITER + //Number of data items coming in
+           payload.messageDigest + DELIMITER +  //solution
+           payload.puzzle + DELIMITER + //puzzle_to_solve
+           to_string(payload.numberOfMissingCharacters) + DELIMITER + //maskLength
+           to_string(MAX_ITERATIONS) + DELIMITER +  //Max hash iterations
+           to_string(payload.fileNumber); //file number
+    //client puzzle + solution + file_index + numberOfMissingCharacters
 }
 
 
 int main(int argc, char const *argv[]) {
-
     ClientPuzzle cr  = {};
-    //cr.init_clientPuzzle();
+    cr.init_clientPuzzle();
 
-    cr.loadDFAFromFile();
+    auto start = std::chrono::high_resolution_clock::now();
+    int range = 100;
+    for(int i=0; i< range; i++) //100
+        cr.getPuzzlePayload();
+//Time analysis
+    auto elapsed = std::chrono::high_resolution_clock::now() - start;
+    long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+    cout << to_string(range)+ ";"+ to_string(microseconds)<< endl; //convert to seconds
 
+
+    start = std::chrono::high_resolution_clock::now();
+    range = 1000;
+    for(int i=0; i< range; i++) //1,000
+        cr.getPuzzlePayload();
+//Time analysis
+    elapsed = std::chrono::high_resolution_clock::now() - start;
+    microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+    cout << to_string(range)+ ";"+ to_string(microseconds)<< endl; //convert to seconds
+
+
+
+
+    start = std::chrono::high_resolution_clock::now();
+    range = 10000;
+    for(int i=0; i< range; i++) //10,000
+        cr.getPuzzlePayload();
+    //Time analysis
+    elapsed = std::chrono::high_resolution_clock::now() - start;
+    microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+    cout << to_string(range)+ ";"+ to_string(microseconds)<< endl; //convert to seconds
+
+
+
+    start = std::chrono::high_resolution_clock::now();
+    range = 100000;
+    for(int i=0; i< range ; i++)  //100,000
+        cr.getPuzzlePayload();
+    //Time analysis
+    elapsed = std::chrono::high_resolution_clock::now() - start;
+    microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+    cout << to_string(range)+ ";"+ to_string(microseconds)<< endl; //convert to seconds
     return 1;
 }

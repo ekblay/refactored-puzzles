@@ -15,19 +15,21 @@
 #include <bitset>
 #include <sstream>
 #include <array>
-#include <experimental/filesystem>
-
+#include <chrono>
 #include "payload.h"
 #include "messages.h"
 #include "grail-adapter/include.h"
-#define MAX_ITERATIONS  2
+#define MAX_ITERATIONS  10
 #define PUZZLE_STRENGTH 16
-#define PUZZLES_PER_FILE 20    //Anything above 20-50 will take a pretty long time, my friend
-#define TOTAL_NUMBER_OF_PUZZLES 100000 //======> in essence there will be (TOTAL_NUMBER_OF_PUZZLES/PUZZLES_PER_FILE) files
+#define PUZZLES_PER_FILE 10    //Anything above 20-50 will take a pretty long time to enumerate, my friend
+#define TOTAL_NUMBER_OF_PUZZLES 1000 //======> in essence there will be (TOTAL_NUMBER_OF_PUZZLES/PUZZLES_PER_FILE) files
 using namespace std;
 class ClientPuzzle {
 private:
-
+    array<grail::fm<char>, (TOTAL_NUMBER_OF_PUZZLES/PUZZLES_PER_FILE) > nfas;
+    array< grail::set<grail::string<char>>, (TOTAL_NUMBER_OF_PUZZLES/PUZZLES_PER_FILE) > results;
+    Payload fetchRandomPuzzle();
+    void loadNFAFromFile();
     /*
      * Functions used to generate Finite Automata files
      */
@@ -38,7 +40,7 @@ private:
     static void createGrailString(grail::string<char>& target, string word);
     static void convertGrailString(grail::string<char> grailString, string &target);
 
-    static string generateClientPuzzle(string puzzleHex);
+    int generateClientPuzzle(string puzzleHex, string &maskedPuzzle);
     static string generateServerSideSecret();
     static string generateMessageDigest(string inputHash);
 
@@ -53,9 +55,8 @@ public:
 
 
     void init_clientPuzzle();
-    Payload loadDFAFromFile();
     string getPuzzlePayload();
-    int verifySolution(const string& solvedPuzzle, const string& date);
+    int verifySolution(const string& solvedPuzzle, const string& index);
 };
 
 
