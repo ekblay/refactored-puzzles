@@ -15,8 +15,7 @@ using namespace std;
 
 
 
-void * socketThread(void *socket)
-{
+void * socketThread(void *socket) {
     int newSocket = *((int *)socket);
 
     int not_done = 1;

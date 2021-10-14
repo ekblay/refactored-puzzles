@@ -15,7 +15,7 @@ fm<char> IO::read_dfa_file(const std::string& str){
 		file >> mfm;
 	}
 	file.close();
-	mfm.subset(); //We should keep the fm<char> deterministic too
+	//mfm.subset(); //We should keep the fm<char> deterministic too
 	return mfm;
 }
 
