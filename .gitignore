@@ -10,6 +10,9 @@
 # IDE stuff
 ./.idea
 
+# Generated Finite machine files
+./MyProposal/puzzles
+
 # Precompiled Headers
 *.gch
 *.pch
