@@ -13,18 +13,18 @@
 #include <bitset>
 #include <sstream>
 #include <array>
-
 #include "messages.h"
 #ifndef REFACTORED_PUZZLES_CLIENTCRYPTO_H
 #define REFACTORED_PUZZLES_CLIENTCRYPTO_H
 
-#endif //REFACTORED_PUZZLES_CLIENTCRYPTO_H
+
 using namespace std;
 class ClientCrypto {
 public:
     string calculateSolution(string puzzle, string solution, int searchIndex, int rounds);
     string getPuzzleSolutionPayload();
-    void setDate(const string &date);
+    void setIndex(const string &index);
+    Payload payload();
 
 private:
     string bruteForceSearch(string word, int currentPosition, int lastIndex, string puzzle, string solution, int rounds);
@@ -34,18 +34,21 @@ private:
     //Array of all hexValues
     array<char,16> hexValues = {'a','b','c','d','e','f','0','1','2','3','4','5','6','7','8','9'};
     string solvedPuzzle;
-    string date;
-
+    string index;
+    string messageDigest;
 };
-string ClientCrypto::calculateSolution(string puzzle, string solution, int searchIndex, int rounds) {
+#endif //REFACTORED_PUZZLES_CLIENTCRYPTO_H
+
+string ClientCrypto::calculateSolution(string puzzle, string sol, int searchIndex, int rounds) {
     //Generate base word
+    messageDigest  = sol;
     string word;
     for(int n = 0; n < searchIndex; n++) {
         word ='0' + word;
     }
     //chop of puzzle
     puzzle = puzzle.substr(searchIndex);
-    string result = bruteForceSearch(word,0,searchIndex,puzzle,solution,rounds);
+    string result = bruteForceSearch(word,0,searchIndex,puzzle,sol,rounds);
     return solvedPuzzle = result + puzzle;
 }
 
@@ -95,9 +98,14 @@ string ClientCrypto::hash256(const string &string) {
 
 string ClientCrypto::getPuzzleSolutionPayload() {
     return solvedPuzzle + DELIMITER +
-    date;
+           messageDigest + DELIMITER +
+           index;
 }
 
-void ClientCrypto::setDate(const string &date) {
-    ClientCrypto::date = date;
+Payload ClientCrypto::payload() {
+    return  Payload(solvedPuzzle, messageDigest, stoi(index));
+}
+
+void ClientCrypto::setIndex(const string &in) {
+    ClientCrypto::index = in;
 }

@@ -11,8 +11,6 @@
 class Payload {
 public:
 
-    int fileNumber;
-
     int maxIterations;
     std::string puzzle;
     int  numberOfMissingCharacters;
@@ -20,18 +18,18 @@ public:
 
     //Client solution payload
     std::string solvedPuzzle;
-    std::string clientSolution;
+    std::string date;
 
-    Payload(int num, std::string puz,int missing, std::string md) {     // Constructor for my proposal
-        fileNumber = num;
+    Payload(std::string d, std::string puz,int missing, std::string md) {     // Constructor for my proposal
+        date = d;
         puzzle.assign(puz);
         numberOfMissingCharacters = missing;
         messageDigest.assign(md);
     }
 
-    Payload(std::string solved, std::string sol, int fNumber) {
+    Payload(std::string solved, std::string sol, std::string d) {
         messageDigest = sol;
         solvedPuzzle = solved;
-        fileNumber = fNumber;
+        date = d;
     }
 };

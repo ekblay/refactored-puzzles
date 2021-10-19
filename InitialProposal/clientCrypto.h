@@ -25,6 +25,7 @@ public:
     string calculateSolution(string puzzle, string solution, int searchIndex, int rounds);
     string getPuzzleSolutionPayload();
     void setDate(const string &date);
+    Payload payload();
 
 private:
     string bruteForceSearch(string word, int currentPosition, int lastIndex, string puzzle, string solution, int rounds);
@@ -98,6 +99,9 @@ string ClientCrypto::getPuzzleSolutionPayload() {
     date;
 }
 
+Payload ClientCrypto::payload() {
+    return  Payload(solvedPuzzle,"" , date);
+};
 void ClientCrypto::setDate(const string &date) {
     ClientCrypto::date = date;
 }

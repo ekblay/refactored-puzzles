@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include <unistd.h>
 #include <string.h>
 #include <iostream>
 #define PORT 8080
@@ -118,11 +117,11 @@ int main(int argc, char const *argv[]) {
             string clientPuzzle =dat[2] ;
             int indexOfMask = stoi(dat[3]);
             int maxIterations = stoi(dat [4]);
-            string date = dat[5];
+            string index = dat[5];
 
             //Solve solution
             ClientCrypto clientCrypto = {};
-            clientCrypto.setDate(date);
+            clientCrypto.setIndex(index);
             string solvedPuzzle = clientCrypto.calculateSolution(clientPuzzle,solution, indexOfMask,maxIterations);
 
             //send out

@@ -1,6 +1,6 @@
-all: server.cpp client.cpp
-	g++ server.cpp -o server -lpthread -lcrypto -w -lgmpxx -lgmp
-	g++ client.cpp -o client -lpthread -lcrypto
-	# g++ crypt.cpp -o crypt -lcrypto -w -lgmpxx -lgmp -lstdc++fs
+all: server.cpp client.cpp execute.cpp
+	g++ execute.cpp -o execute  -lcrypto -w -lgmpxx -lgmp
+	g++ server.cpp -o server -lpthread  -lcrypto -w -lgmpxx -lgmp
+	g++ client.cpp -o client -lcrypto
 clean:
-	rm server client
+	rm execute server client

@@ -6,14 +6,18 @@
 #include <cstring>
 #include<pthread.h>
 
-
+#include <sys/shm.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <semaphore.h>
 //utils
 #include "crypt.h"
 
 #define PORT 8080
 using namespace std;
 
-
+ClientPuzzle cr = {};
 
 void * socketThread(void *socket) {
     int newSocket = *((int *)socket);
@@ -31,7 +35,6 @@ void * socketThread(void *socket) {
     string dataBuf;
     int hasData =0;
     string prefix;
-    ClientPuzzle cr = {};
 //Initial read
     cout <<"********************************" <<endl;
     while (not_done) {
@@ -73,7 +76,6 @@ void * socketThread(void *socket) {
                 //Calculate the puzzle and solution
                 send(newSocket, (MESSAGE_HEADER + CLIENT_PUZZLE).c_str(), (MESSAGE_HEADER + CLIENT_PUZZLE).length(), 0);
                 //Send target hash
-                cr.init_clientPuzzle();
                 send(newSocket, (DATA + cr.getPuzzlePayload()).c_str(), (DATA + cr.getPuzzlePayload()).length(), 0);
                 issued_puzzle = 1;
                 cout<<"SENT: CLIENT PUZZLE"<<endl;
@@ -88,69 +90,69 @@ void * socketThread(void *socket) {
             cout<<"CLIENT: CLIENT PUZZLE SOLUTION"<<endl;
             //TODO parse extra piece
 
-                // Check solution if correct send HANDSHAKE_COMPLETE
-                //else send CLIENT_PUZZLE_RETRY
-                if (issued_puzzle) {
-                    //Retrieve all the data from the output stream if it has not been collected already
-                    if(!hasData) {
-                        char puzzleBuffer[2048] = {0};
-                        int bytesReceived;
-                        //target hash
-                        bytesReceived = recv(newSocket, buffer, 2048, 0);
-                        buffer[bytesReceived] = '\0';
-                        dataBuf = string(buffer);
-                        hasData = 0;
-                    }
-                    //Strip off header
-                    dataBuf.erase(0,MESSAGE_HEADER.length());
-
-                    size_t pos = 0;
-                    string token;
-                    array<string,2> dat; int i =0;
-                    while ((pos = dataBuf.find(DELIMITER)) != string::npos) {
-                        token = dataBuf.substr(0, pos);
-                        dat[i] = token;
-                        i++;
-                        dataBuf.erase(0, pos + DELIMITER.length());
-                    }
-                    dat[i] = dataBuf;
-
-                    string solution = dat[0];
-                    string date = dat[1];
-
-                   if( cr.verifySolution(solution, date) ==0) { //If solution not correct retry
-                       if(retry < 3) {
-                           send(newSocket, (MESSAGE_HEADER + CLIENT_PUZZLE_RETRY).c_str(),
-                                (MESSAGE_HEADER + CLIENT_PUZZLE_RETRY).length(), 0);
-                           //Send target hash
-                           cr.init_clientPuzzle();
-                           send(newSocket, (DATA + cr.getPuzzlePayload()).c_str(),
-                                (DATA + cr.getPuzzlePayload()).length(), 0);
-                           retry++;
-                           cout<<"SENT: CLIENT PUZZLE RETRY"<<endl;
-                       } else {
-                           //send end session
-                           send(newSocket, (MESSAGE_HEADER + END_SESSION).c_str(),(MESSAGE_HEADER + END_SESSION).length(), 0);
-                           cout<<"SENT: END SESSION"<<endl;
-                           not_done = 0;
-                       }
-                       continue;
-                   }
-
-                   //if verified send handshake complete
-                    send(newSocket, (MESSAGE_HEADER + HANDSHAKE_COMPLETE).c_str(),
-                         (MESSAGE_HEADER + HANDSHAKE_COMPLETE).length(), 0);
-                    authenticated = 1;
-                    issued_puzzle = 0;
-                    cout<<"SENT: HANDSHAKE COMPLETE"<<endl;
-                } else {
-                    send(newSocket, (MESSAGE_HEADER + INVALID_REQUEST).c_str(), (MESSAGE_HEADER + INVALID_REQUEST).length(),
-                         0);
-                    cout << "SENT: INVALID REQUEST\n" << endl;
-                    //clear
-                    buffer[numBytes] = '\0';
-                    stringBuf = "";
+            // Check solution if correct send HANDSHAKE_COMPLETE
+            //else send CLIENT_PUZZLE_RETRY
+            if (issued_puzzle) {
+                //Retrieve all the data from the output stream if it has not been collected already
+                if(!hasData) {
+                    char puzzleBuffer[2048] = {0};
+                    int bytesReceived;
+                    //target hash
+                    bytesReceived = recv(newSocket, buffer, 2048, 0);
+                    buffer[bytesReceived] = '\0';
+                    dataBuf = string(buffer);
+                    hasData = 0;
                 }
+                //Strip off header
+                dataBuf.erase(0,MESSAGE_HEADER.length());
+
+                size_t pos = 0;
+                string token;
+                array<string,3> dat; int i =0;
+                while ((pos = dataBuf.find(DELIMITER)) != string::npos) {
+                    token = dataBuf.substr(0, pos);
+                    dat[i] = token;
+                    i++;
+                    dataBuf.erase(0, pos + DELIMITER.length());
+                }
+                dat[i] = dataBuf;
+
+                string solvedPuzzle = dat[0];
+                string solution = dat[1];
+                string index = dat[2];
+
+                if( cr.verifySolution(solvedPuzzle + solution, index) ==0) { //If solution not correct retry
+                    if(retry < 3) {
+                        send(newSocket, (MESSAGE_HEADER + CLIENT_PUZZLE_RETRY).c_str(),
+                             (MESSAGE_HEADER + CLIENT_PUZZLE_RETRY).length(), 0);
+                        //Send target hash
+                        send(newSocket, (DATA + cr.getPuzzlePayload()).c_str(),
+                             (DATA + cr.getPuzzlePayload()).length(), 0);
+                        retry++;
+                        cout<<"SENT: CLIENT PUZZLE RETRY"<<endl;
+                    } else {
+                        //send end session
+                        send(newSocket, (MESSAGE_HEADER + END_SESSION).c_str(),(MESSAGE_HEADER + END_SESSION).length(), 0);
+                        cout<<"SENT: END SESSION"<<endl;
+                        not_done = 0;
+                    }
+                    continue;
+                }
+
+                //if verified send handshake complete
+                send(newSocket, (MESSAGE_HEADER + HANDSHAKE_COMPLETE).c_str(),
+                     (MESSAGE_HEADER + HANDSHAKE_COMPLETE).length(), 0);
+                authenticated = 1;
+                issued_puzzle = 0;
+                cout<<"SENT: HANDSHAKE COMPLETE"<<endl;
+            } else {
+                send(newSocket, (MESSAGE_HEADER + INVALID_REQUEST).c_str(), (MESSAGE_HEADER + INVALID_REQUEST).length(),
+                     0);
+                cout << "SENT: INVALID REQUEST\n" << endl;
+                //clear
+                buffer[numBytes] = '\0';
+                stringBuf = "";
+            }
         }
 
         //Client asks for resource, wait then respond
@@ -158,7 +160,7 @@ void * socketThread(void *socket) {
             cout <<"CLIENT: GET RESOURCE"<<endl;
             if(authenticated) {
                 //send some random stuff
-               // sleep(2);
+                // sleep(2);
                 send(newSocket, (MESSAGE_HEADER + RESOURCE).c_str(),(MESSAGE_HEADER + RESOURCE).length() , 0);
                 cout << "SENT: RESOURCE" << endl;
             } else {
@@ -196,14 +198,13 @@ int main(int argc, char const *argv[]) {
     struct sockaddr_in address;
     int opt = 1;
     int addrlen = sizeof(address);
-
+    cr.init_clientPuzzle();
 
     // Creating socket file descriptor
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
         perror("socket failed");
         exit(EXIT_FAILURE);
     }
-
     // Forcefully attaching socket to the port 8080
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
         perror("setsockopt");
@@ -229,18 +230,14 @@ int main(int argc, char const *argv[]) {
     pthread_t tid[numThreads];
     int i = 0;
 
-    auto start = std::chrono::high_resolution_clock::now();
-    //cout<<"Listening"<<endl;
-    int numClients = 0
-    int limit = 100;  //Collect this value from args
-    while(numClients < 100) {
+    cout<<"Listening"<<endl;
+    while(1) {
         if ((new_socket = accept(server_fd, (struct sockaddr *) &address, (socklen_t * ) & addrlen)) < 0) {
             perror("accept");
             exit(EXIT_FAILURE);
-        } //else {
-        //cout<<"\nNew Client has been accepted"<<endl;
-        //}
-        numClients ++;
+        } else {
+            cout<<"\nNew Client has been accepted"<<endl;
+        }
         if( pthread_create(&tid[i++], NULL, socketThread, &new_socket) != 0 ) {
             printf("Failed to create thread\n");
             exit(EXIT_FAILURE);
@@ -256,8 +253,5 @@ int main(int argc, char const *argv[]) {
         }
     }
 
-    auto elapsed = std::chrono::high_resolution_clock::now() - start;
-    long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
-    cout << to_string(numClients)+ ";"+ to_string(microseconds)<< endl; //convert to seconds
     return 0;
 }

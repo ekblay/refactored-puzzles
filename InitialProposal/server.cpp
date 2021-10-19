@@ -6,7 +6,6 @@
 #include <cstring>
 #include<pthread.h>
 
-
 //utils
 #include "crypt.h"
 
@@ -84,7 +83,7 @@ void * socketThread(void *socket)
 
         if (stringBuf == CLIENT_PUZZLE_SOLUTION) {
             cout<<"CLIENT: CLIENT PUZZLE SOLUTION"<<endl;
-            //TODO parse extra piece
+            //TODO add timestamp
 
                 // Check solution if correct send HANDSHAKE_COMPLETE
                 //else send CLIENT_PUZZLE_RETRY
@@ -226,19 +225,14 @@ int main(int argc, char const *argv[]) {
     int numThreads = 50;
     pthread_t tid[numThreads];
     int i = 0;
-
-    auto start = std::chrono::high_resolution_clock::now();
-    //cout<<"Listening"<<endl;
-    int numClients = 0
-    int limit = 100;  //Collect this value from args
-    while(numClients < 100) {
+    cout<<"Listening"<<endl;
+    while(1) {
         if ((new_socket = accept(server_fd, (struct sockaddr *) &address, (socklen_t * ) & addrlen)) < 0) {
             perror("accept");
             exit(EXIT_FAILURE);
-        } //else {
-            //cout<<"\nNew Client has been accepted"<<endl;
-        //}
-        numClients ++;
+        } else {
+            cout<<"\nNew Client has been accepted"<<endl;
+        }
         if( pthread_create(&tid[i++], NULL, socketThread, &new_socket) != 0 ) {
             printf("Failed to create thread\n");
             exit(EXIT_FAILURE);
@@ -253,9 +247,5 @@ int main(int argc, char const *argv[]) {
             i = 0;
         }
     }
-
-    auto elapsed = std::chrono::high_resolution_clock::now() - start;
-    long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
-    cout << to_string(numClients)+ ";"+ to_string(microseconds)<< endl; //convert to seconds
     return 0;
 }

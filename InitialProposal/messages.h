@@ -1,10 +1,12 @@
 //
 // Created by kali on 9/9/21.
 //
+#pragma once
 #include <iostream>
 #include <string>
 #include <iostream>
 #include <cstring>
+#include "payload.h"
 #ifndef CLIENTPUZZLE_ORIGINAL_MESSAGES_H
 #define CLIENTPUZZLE_ORIGINAL_MESSAGES_H
 #endif //CLIENTPUZZLE_ORIGINAL_MESSAGES_H
