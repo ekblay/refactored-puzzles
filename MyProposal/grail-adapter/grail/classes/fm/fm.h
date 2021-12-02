@@ -626,7 +626,7 @@ public:
 //-------------------------------------------------------------
 	void		suffix();
 	void		prefix();
-
+    int fmrandenum(string<Label>& lang, int length) const;
 };
 
 #define		FM_CLASS_DEFINITION

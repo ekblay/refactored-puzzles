@@ -100,7 +100,7 @@ int main(int argc, char const *argv[]) {
             }
             //Strip off header
             dataBuf.erase(0,MESSAGE_HEADER.length());
-
+//            cout<<dataBuf<<endl;
             size_t pos = 0;
             string token;
             array<string,6> dat; int i =0;
@@ -112,12 +112,14 @@ int main(int argc, char const *argv[]) {
                 dataBuf.erase(0, pos + DELIMITER.length());
             }
             dat[i] = dataBuf;
+
             //record data
             string solution = dat[1];
             string clientPuzzle =dat[2] ;
             int indexOfMask = stoi(dat[3]);
             int maxIterations = stoi(dat [4]);
-            string index = dat[5];
+
+            int index = stoi(dat[5]);
 
             //Solve solution
             ClientCrypto clientCrypto = {};

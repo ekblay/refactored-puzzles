@@ -35,7 +35,7 @@
  #include <queue>
  #include <sstream>
  #include "../stenum.h"
- 
+#include <random>
 /* Added namespace grail, Brandon Stewart, July 2015 */
 
 namespace grail
@@ -112,7 +112,7 @@ namespace grail
 //fast gap algprithm
 #include	"fastgap/node.h"
 #include	"fastgap/fastgap.src"
-
+#include        "fmrandenum.src"
 }
 
 #endif

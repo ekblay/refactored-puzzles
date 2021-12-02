@@ -17,6 +17,8 @@ public:
 	static void			print_dfa(const fm<char>&);
 	static void			print_nfa(const fm<char>&);
 	static void			print_regex(const re<char>&);
+
+    static fcm<char> 	read_fcm_file(const std::string&);
 };
 
 }

@@ -119,9 +119,9 @@ void * socketThread(void *socket) {
 
                 string solvedPuzzle = dat[0];
                 string solution = dat[1];
-                string index = dat[2];
+                int index = stoi(dat[2]);
 
-                if( cr.verifySolution(solvedPuzzle + solution, index) ==0) { //If solution not correct retry
+                if( cr.verifySolution(solvedPuzzle + solution,index) ==0) { //If solution not correct retry
                     if(retry < 3) {
                         send(newSocket, (MESSAGE_HEADER + CLIENT_PUZZLE_RETRY).c_str(),
                              (MESSAGE_HEADER + CLIENT_PUZZLE_RETRY).length(), 0);

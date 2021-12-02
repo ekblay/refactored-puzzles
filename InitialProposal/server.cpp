@@ -70,7 +70,7 @@ void * socketThread(void *socket)
                 //Calculate the puzzle and solution
                 send(newSocket, (MESSAGE_HEADER + CLIENT_PUZZLE).c_str(), (MESSAGE_HEADER + CLIENT_PUZZLE).length(), 0);
                 //Send target hash
-                cr.init_clientPuzzle();
+
                 send(newSocket, (DATA + cr.getPuzzlePayload()).c_str(), (DATA + cr.getPuzzlePayload()).length(), 0);
                 issued_puzzle = 1;
                 cout<<"SENT: CLIENT PUZZLE"<<endl;
@@ -103,7 +103,7 @@ void * socketThread(void *socket)
 
                     size_t pos = 0;
                     string token;
-                    array<string,2> dat; int i =0;
+                    array<string,3> dat; int i =0;
                     while ((pos = dataBuf.find(DELIMITER)) != string::npos) {
                         token = dataBuf.substr(0, pos);
                         dat[i] = token;
@@ -112,15 +112,15 @@ void * socketThread(void *socket)
                     }
                     dat[i] = dataBuf;
 
-                    string solution = dat[0];
-                    string date = dat[1];
+                    string solvedPuzzle = dat[0];
+                    string messageDigest = dat[1];
+                    int iterations = stoi(dat[2]);
 
-                   if( cr.verifySolution(solution, date) ==0) { //If solution not correct retry
+                   if( cr.verifySolution(solvedPuzzle, messageDigest, iterations) ==0) { //If solution not correct retry
                        if(retry < 3) {
                            send(newSocket, (MESSAGE_HEADER + CLIENT_PUZZLE_RETRY).c_str(),
                                 (MESSAGE_HEADER + CLIENT_PUZZLE_RETRY).length(), 0);
                            //Send target hash
-                           cr.init_clientPuzzle();
                            send(newSocket, (DATA + cr.getPuzzlePayload()).c_str(),
                                 (DATA + cr.getPuzzlePayload()).length(), 0);
                            retry++;

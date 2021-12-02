@@ -23,7 +23,7 @@ class ClientCrypto {
 public:
     string calculateSolution(string puzzle, string solution, int searchIndex, int rounds);
     string getPuzzleSolutionPayload();
-    void setIndex(const string &index);
+    void setIndex(int index);
     Payload payload();
 
 private:
@@ -34,7 +34,7 @@ private:
     //Array of all hexValues
     array<char,16> hexValues = {'a','b','c','d','e','f','0','1','2','3','4','5','6','7','8','9'};
     string solvedPuzzle;
-    string index;
+    int index;
     string messageDigest;
 };
 #endif //REFACTORED_PUZZLES_CLIENTCRYPTO_H
@@ -99,13 +99,13 @@ string ClientCrypto::hash256(const string &string) {
 string ClientCrypto::getPuzzleSolutionPayload() {
     return solvedPuzzle + DELIMITER +
            messageDigest + DELIMITER +
-           index;
+            to_string(index);
 }
 
 Payload ClientCrypto::payload() {
-    return  Payload(solvedPuzzle, messageDigest, stoi(index));
+    return  Payload(solvedPuzzle, messageDigest, index);
 }
 
-void ClientCrypto::setIndex(const string &in) {
+void ClientCrypto::setIndex(int in) {
     ClientCrypto::index = in;
 }

@@ -17,12 +17,23 @@ void runWithVerifications(Payload, ClientPuzzle,int);
  *
  */
 int main(int argc, char const *argv[]) {
-    int times [9] = { 100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000};
+    int times [6] = { 100, 500, 1000, 5000, 10000, 50000};
 
     cout<<"\nAnalysis for generating and serving client puzzles\n"<<endl;
-    for(int k = 0; k< 9;k++)
+    for(int k = 0; k< 6;k++)
         run(times[k]);
 
+    for(int k = 0; k< 6;k++)
+        run(times[k]);
+
+    for(int k = 0; k< 6;k++)
+        run(times[k]);
+
+    for(int k = 0; k< 6;k++)
+        run(times[k]);
+
+    for(int k = 0; k< 6;k++)
+        run(times[k]);
     /********************************************************************************/
     /*
      * We will create a sample puzzle and use the client crypto utility to solve it. The solvedPuzzle will be used to
@@ -30,7 +41,6 @@ int main(int argc, char const *argv[]) {
      * */
     ClientPuzzle server = {};
     ClientCrypto client = {};
-    server.init_clientPuzzle();
     Payload serverPayload = server.payload();
     client.calculateSolution(
             serverPayload.puzzle,
@@ -38,11 +48,22 @@ int main(int argc, char const *argv[]) {
             serverPayload.numberOfMissingCharacters,
             serverPayload.maxIterations);
     Payload clientPayload = client.payload();
-    clientPayload.date = serverPayload.date;
     /********************************************************************************/
 
     cout<<"\nAnalysis for verifying client puzzle solution\n"<<endl;
-    for(int k = 0; k< 9;k++)
+    for(int k = 0; k< 6;k++)
+        runWithVerifications(clientPayload, server, times[k]);
+
+    for(int k = 0; k< 6;k++)
+        runWithVerifications(clientPayload, server, times[k]);
+
+    for(int k = 0; k< 6;k++)
+        runWithVerifications(clientPayload, server, times[k]);
+
+    for(int k = 0; k< 6;k++)
+        runWithVerifications(clientPayload, server, times[k]);
+
+    for(int k = 0; k< 6;k++)
         runWithVerifications(clientPayload, server, times[k]);
 }
 
@@ -51,8 +72,7 @@ void run(int times) {
     //===========================================================================
     for(int i= 0; i < times; i++) {
         ClientPuzzle server = {};
-        server.init_clientPuzzle();
-        server.getPuzzlePayload();
+        server.payload();
     }
     //===========================================================================
     auto elapsed = std::chrono::high_resolution_clock::now() - start;
@@ -64,7 +84,7 @@ void runWithVerifications(Payload solvedPayload, ClientPuzzle server,int times )
     auto start = std::chrono::high_resolution_clock::now();
     //===========================================================================
     for(int i= 0; i < times; i++) {
-        server.verifySolution(solvedPayload.solvedPuzzle, solvedPayload.date);
+        server.verifySolution(solvedPayload.solvedPuzzle, solvedPayload.messageDigest, solvedPayload.iterations);
     }
     //===========================================================================
     auto elapsed = std::chrono::high_resolution_clock::now() - start;

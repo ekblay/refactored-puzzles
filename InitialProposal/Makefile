@@ -3,4 +3,4 @@ all: server.cpp client.cpp execute.cpp
 	g++ server.cpp -o server -lpthread  -lcrypto -w -lgmpxx -lgmp
 	g++ client.cpp -o client -lcrypto
 clean:
-	rm execute
+	rm execute client server

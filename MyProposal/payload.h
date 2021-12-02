@@ -11,7 +11,7 @@
 class Payload {
 public:
 
-    int fileNumber;
+    int index;
 
     int maxIterations;
     std::string puzzle;
@@ -23,7 +23,7 @@ public:
     std::string clientSolution;
 
     Payload(int num, std::string puz,int missing, std::string md) {     // Constructor for my proposal
-        fileNumber = num;
+        index = num;
         puzzle.assign(puz);
         numberOfMissingCharacters = missing;
         messageDigest.assign(md);
@@ -32,6 +32,6 @@ public:
     Payload(std::string solved, std::string sol, int fNumber) {
         messageDigest = sol;
         solvedPuzzle = solved;
-        fileNumber = fNumber;
+        index = fNumber;
     }
 };

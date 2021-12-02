@@ -104,7 +104,7 @@ int main(int argc, char const *argv[]) {
 
             size_t pos = 0;
             string token;
-            array<string,6> dat; int i =0;
+            array<string,5> dat; int i =0;
             while ((pos = dataBuf.find(DELIMITER)) != string::npos) {
                 token = dataBuf.substr(0, pos);
                 dat[i] = token;
@@ -116,14 +116,12 @@ int main(int argc, char const *argv[]) {
             //record data
             string solution = dat[1];
             string clientPuzzle =dat[2] ;
-            int indexOfMask = stoi(dat[3]);
+            int numberOfMissingCharacters = stoi(dat[3]);
             int maxIterations = stoi(dat [4]);
-            string date = dat[5];
 
             //Solve solution
             ClientCrypto clientCrypto = {};
-            clientCrypto.setDate(date);
-            string solvedPuzzle = clientCrypto.calculateSolution(clientPuzzle,solution, indexOfMask,maxIterations);
+            string solvedPuzzle = clientCrypto.calculateSolution(clientPuzzle,solution, numberOfMissingCharacters,maxIterations);
 
             //send out
             send(sock,(MESSAGE_HEADER + CLIENT_PUZZLE_SOLUTION).c_str(),(MESSAGE_HEADER + CLIENT_PUZZLE_SOLUTION).length() , 0);

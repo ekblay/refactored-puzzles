@@ -254,7 +254,7 @@ public:
 	fl<Item>&	operator-=(const string<Item>& s)
 			// removes the parameter word from this language if
 			//  it is found.  If the parameter word is not found,
-			//  no change is made.  Returns a referenct to this
+			//  no change is made.  Returns a reference to this
 			//  fl.
 			{ words -= s; return *this; }
 

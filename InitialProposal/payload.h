@@ -1,5 +1,5 @@
 //
-// Created by kali on 10/14/21.
+// Created by ekblay on 10/14/21.
 //
 
 #ifndef REFACTORED_PUZZLES_PAYLOAD_H
@@ -10,26 +10,32 @@
 #include <string>
 class Payload {
 public:
+    std::string messageDigest;
 
+    //Server specific
     int maxIterations;
     std::string puzzle;
     int  numberOfMissingCharacters;
-    std::string messageDigest;
 
-    //Client solution payload
+
+    //Client specific payload
     std::string solvedPuzzle;
-    std::string date;
+    int iterations;
 
-    Payload(std::string d, std::string puz,int missing, std::string md) {     // Constructor for my proposal
-        date = d;
+
+
+    //Server payload
+    Payload(std::string puz,int missing, std::string md, int maxIter) {     // Constructor for my proposal
         puzzle.assign(puz);
-        numberOfMissingCharacters = missing;
         messageDigest.assign(md);
+        numberOfMissingCharacters = missing;
+        maxIterations = maxIter;
     }
 
-    Payload(std::string solved, std::string sol, std::string d) {
-        messageDigest = sol;
-        solvedPuzzle = solved;
-        date = d;
+    //Client payload
+    Payload(std::string solved, std::string sol, int iter) {
+        messageDigest.assign(sol);
+        solvedPuzzle.assign(solved);
+        iterations = iter;
     }
 };
