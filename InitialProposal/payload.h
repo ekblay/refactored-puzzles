@@ -8,6 +8,7 @@
 #endif //REFACTORED_PUZZLES_PAYLOAD_H
 
 #include <string>
+
 class Payload {
 public:
     std::string messageDigest;
@@ -15,7 +16,7 @@ public:
     //Server specific
     int maxIterations;
     std::string puzzle;
-    int  numberOfMissingCharacters;
+    int numberOfMissingCharacters;
 
 
     //Client specific payload
@@ -23,9 +24,8 @@ public:
     int iterations;
 
 
-
     //Server payload
-    Payload(std::string puz,int missing, std::string md, int maxIter) {     // Constructor for my proposal
+    Payload(std::string puz, int missing, std::string md, int maxIter) {     // Constructor for my proposal
         puzzle.assign(puz);
         messageDigest.assign(md);
         numberOfMissingCharacters = missing;

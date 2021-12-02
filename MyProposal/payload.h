@@ -8,6 +8,7 @@
 #endif //REFACTORED_PUZZLES_PAYLOAD_H
 
 #include <string>
+
 class Payload {
 public:
 
@@ -15,14 +16,14 @@ public:
 
     int maxIterations;
     std::string puzzle;
-    int  numberOfMissingCharacters;
+    int numberOfMissingCharacters;
     std::string messageDigest;
 
     //Client solution payload
     std::string solvedPuzzle;
     std::string clientSolution;
 
-    Payload(int num, std::string puz,int missing, std::string md) {     // Constructor for my proposal
+    Payload(int num, std::string puz, int missing, std::string md) {     // Constructor for my proposal
         index = num;
         puzzle.assign(puz);
         numberOfMissingCharacters = missing;
