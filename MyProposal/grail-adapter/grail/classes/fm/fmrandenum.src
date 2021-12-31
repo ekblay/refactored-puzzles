@@ -26,10 +26,7 @@ int            i;
 // reduce to reachable machine
 
 tmp = *this;
-tmp.reachable_fm();
-tmp.reverse();
-tmp.reachable_fm();
-tmp.reverse();
+
 
 // initialize...
 lang.clear();
