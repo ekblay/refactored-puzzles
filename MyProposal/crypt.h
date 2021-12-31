@@ -1,5 +1,5 @@
 //
-// Created by kali on 9/22/21.
+// Created by @ekblay on 9/22/21.
 //
 
 #ifndef CLIENTPUZZLE_ORIGINAL_CRYPT_H
@@ -35,6 +35,7 @@ private:
 
     void addWordToVerificationBucket(grail::string<char>, int);
 
+
     /*
      * Functions used to generate Finite Automata files
      */
@@ -50,12 +51,15 @@ private:
 
     static void convertGrailString(grail::string<char> grailString, string &target);
 
-    int generateClientPuzzle(string puzzleHex, string &maskedPuzzle);
+    static int generateClientPuzzle(string puzzleHex, string &maskedPuzzle);
 
     static string generateServerSideSecret();
 
     static string generateMessageDigest(string inputHash);
 
+    static int transposeIndex(int);
+
+    static int unTransposeIndex(int);
 
     /**
     * utility function for computing SHA_256 of a given string
@@ -75,6 +79,7 @@ public:
     Payload payload();
 
     void clearVerificationBucket();
+
 };
 
 #endif //CLIENTPUZZLE_ORIGINAL_CRYPT_H
@@ -225,6 +230,8 @@ void ClientPuzzle::printProgressBar(float progress) {
 
 
 void ClientPuzzle::loadDFAFromFile() {
+    srand((unsigned) time(0));
+    COEFFICIENT = MIN_COEFFICIENT_VALUE + (rand() % MAX_COEFFICIENT_VALUE);
     auto start = std::chrono::high_resolution_clock::now();
     cout << "***************Loading automata into memory ****************" << endl;
     int fileCount = (TOTAL_NUMBER_OF_PUZZLES / PUZZLES_PER_FILE);
@@ -247,24 +254,22 @@ void ClientPuzzle::loadDFAFromFile() {
 }
 
 Payload ClientPuzzle::fetchRandomPuzzle() {
-    int fileNumber = (rand() % distributionBucket.size());
+    int index = (rand() % distributionBucket.size());
     if (verificationBucket.size() == 0 || verificationBucket.size() < distributionBucket.size()) {
         grail::fm<char> g;
         verificationBucket.resize(distributionBucket.size(), g);
     }
     grail::string<char> gStr;
-    distributionBucket[fileNumber].fmrandenum(gStr, 128);
-    //cout<<"Size " + to_string(distributionBucket[fileNumber].number_of_final_states()) <<endl;
+    distributionBucket[index].fmrandenum(gStr, 128);
     std::string str;
     convertGrailString(gStr, str);
-
     string maskedPuzzle;
     string clientPuzzle = str.substr(0, 64);
     string solution = str.substr(64, 64);
     int numMissingCharacters = generateClientPuzzle(clientPuzzle, maskedPuzzle);
     //append ip address and place inside verification bucket
-    addWordToVerificationBucket(gStr, fileNumber);
-    Payload payload = Payload(fileNumber, maskedPuzzle, numMissingCharacters, solution);
+    addWordToVerificationBucket(gStr, index);
+    Payload payload = Payload(transposeIndex(index), maskedPuzzle, numMissingCharacters, solution);
     return payload;
 }
 
@@ -274,10 +279,7 @@ void ClientPuzzle::addWordToVerificationBucket(grail::string<char> word, int ind
     language += word;
     fm.fltofm(language);
     //add word to dfa
-
     verificationBucket[index] += fm;
-
-
 }
 
 void ClientPuzzle::removeWordFromMachine(grail::fm<char> &dfa, grail::string<char> word) {
@@ -292,8 +294,18 @@ void ClientPuzzle::removeWordFromMachine(grail::fm<char> &dfa, grail::string<cha
     }
 }
 
+int ClientPuzzle::transposeIndex(int x) {
+    //coefficient(x) + offset = y
+    return (COEFFICIENT * x) + OFFSET_VALUE;
+}
+
+int ClientPuzzle::unTransposeIndex(int y) {
+    // (y-offset)/coefficient
+    return (y - OFFSET_VALUE) / COEFFICIENT;
+}
+
 /*********************************************************************
- * Public functions
+ * Instance functions
  **********************************************************************/
 
 int ClientPuzzle::generateClientPuzzle(string puzzleHex, string &maskedPuzzle) {
@@ -315,10 +327,9 @@ int ClientPuzzle::verifySolution(const string &solvedPuzzleAndSolution, int inde
     grail::string<char> str;
     createGrailString(str, solvedPuzzleAndSolution);
     //check for array bounds
-    int valid = verificationBucket.at(index).member_of_language(str, 0);
-
+    int valid = verificationBucket.at(unTransposeIndex(index)).member_of_language(str, 0);
     //remove from verification bucket
-    removeWordFromMachine(verificationBucket.at(index), str);
+    removeWordFromMachine(verificationBucket.at(unTransposeIndex(index)), str);
     return valid;
 }
 
