@@ -1,3 +1,6 @@
+//
+// Created by @ekblay.
+//
 #include <unistd.h>
 #include <cstdio>
 #include <sys/socket.h>
@@ -5,11 +8,6 @@
 #include <netinet/in.h>
 #include <cstring>
 #include<pthread.h>
-
-#include <sys/shm.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
-#include <fcntl.h>
 #include <semaphore.h>
 //utils
 #include "crypt.h"
@@ -76,7 +74,8 @@ void *socketThread(void *socket) {
                 //Calculate the puzzle and solution
                 send(newSocket, (MESSAGE_HEADER + CLIENT_PUZZLE).c_str(), (MESSAGE_HEADER + CLIENT_PUZZLE).length(), 0);
                 //Send target hash
-                send(newSocket, (DATA + cr.getPuzzlePayload()).c_str(), (DATA + cr.getPuzzlePayload()).length(), 0);
+                string payload = cr.getPuzzlePayload();
+                send(newSocket, (DATA + payload).c_str(),(DATA + payload).length(), 0);
                 issued_puzzle = 1;
                 cout << "SENT: CLIENT PUZZLE" << endl;
             } else { //else send HANDSHAKE_COMPLETE
@@ -128,8 +127,9 @@ void *socketThread(void *socket) {
                         send(newSocket, (MESSAGE_HEADER + CLIENT_PUZZLE_RETRY).c_str(),
                              (MESSAGE_HEADER + CLIENT_PUZZLE_RETRY).length(), 0);
                         //Send target hash
-                        send(newSocket, (DATA + cr.getPuzzlePayload()).c_str(),
-                             (DATA + cr.getPuzzlePayload()).length(), 0);
+                        string payload = cr.getPuzzlePayload();
+                        send(newSocket, (DATA + payload).c_str(),
+                             (DATA + payload).length(), 0);
                         retry++;
                         cout << "SENT: CLIENT PUZZLE RETRY" << endl;
                     } else {

@@ -19,8 +19,7 @@ void runWithVerifications(Payload, int);
  *
  */
 int main(int argc, char const *argv[]) {
-//    server.init_clientPuzzle();
-    server.loadDFAFromFile();
+    server.init_clientPuzzle();
     int times[6] = {100, 500, 1000, 5000, 10000, 50000};
 
     cout << "\nAnalysis for generating and serving client puzzles\n" << endl;

@@ -1,5 +1,5 @@
 //
-// Created by kali on 9/29/21.
+// Created by @ekblay on 9/29/21.
 //
 #include <openssl/sha.h>
 #include <openssl/rand.h>
@@ -48,16 +48,16 @@ private:
 
 #endif //REFACTORED_PUZZLES_CLIENTCRYPTO_H
 
-string ClientCrypto::calculateSolution(string puzzle, string sol, int searchIndex, int rounds) {
-    //Generate base word
-    messageDigest = sol;
+string ClientCrypto::calculateSolution(string puzzle, string solution, int numberOfMissingCharacters, int rounds) {
+    //Generate base word '0000'
+    messageDigest.assign(solution);
     string word;
-    for (int n = 0; n < searchIndex; n++) {
+    for (int n = 0; n < numberOfMissingCharacters; n++) {
         word = '0' + word;
     }
     //chop of puzzle
-    puzzle = puzzle.substr(searchIndex);
-    string result = bruteForceSearch(word, 0, searchIndex, puzzle, sol, rounds);
+    puzzle = puzzle.substr(numberOfMissingCharacters);
+    string result = bruteForceSearch(word, 0, numberOfMissingCharacters, puzzle, solution, rounds);
     return solvedPuzzle = result + puzzle;
 }
 
