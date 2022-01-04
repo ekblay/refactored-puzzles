@@ -13,6 +13,7 @@
 #include <bitset>
 #include <sstream>
 #include <array>
+#include <chrono>
 
 #include "messages.h"
 
@@ -55,7 +56,11 @@ string ClientCrypto::calculateSolution(string puzzle, string solution, int numbe
     }
     //chop of puzzle
     puzzle = puzzle.substr(numberOfMissingCharacters);
+    auto start = std::chrono::high_resolution_clock::now();
     string result = bruteForceSearch(word, 0, numberOfMissingCharacters, puzzle, solution, rounds);
+    auto elapsed = std::chrono::high_resolution_clock::now() - start;
+    long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+    cout <<"Time for solving:" + to_string(microseconds/1000000) << endl; //convert to seconds
     return solvedPuzzle = result + puzzle;
 }
 

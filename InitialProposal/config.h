@@ -1,5 +1,5 @@
 //
-// Created by ekblay on 12/1/21.
+// Created by @ekblay on 12/1/21.
 //
 
 
@@ -8,6 +8,6 @@
 
 #endif //REFACTORED_PUZZLES_CONFIG_H
 
-int MAX_ITERATIONS =  10000;
 int MIN_ITERATIONS = 5000;
-int PUZZLE_STRENGTH = 16;
+int MAX_ITERATIONS =  10000;
+int PUZZLE_STRENGTH = 8;

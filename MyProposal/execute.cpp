@@ -7,9 +7,12 @@
 
 using namespace std;
 ClientPuzzle server = {};
+int times[6] = {100, 500, 1000, 5000, 10000, 50000};
 
-void run(int);
+void executeGeneration(int);
+void runWithGeneration(int);
 
+void executeVerification(int n);
 void runWithVerifications(Payload, int);
 
 /**
@@ -20,28 +23,42 @@ void runWithVerifications(Payload, int);
  */
 int main(int argc, char const *argv[]) {
     server.init_clientPuzzle();
-    int times[6] = {100, 500, 1000, 5000, 10000, 50000};
 
     cout << "\nAnalysis for generating and serving client puzzles\n" << endl;
-    for (int k = 0; k < 6; k++)
-        run(times[k]);
+    executeGeneration(5);
 
-    for (int k = 0; k < 6; k++)
-        run(times[k]);
-
-    for (int k = 0; k < 6; k++)
-        run(times[k]);
-
-    for (int k = 0; k < 6; k++)
-        run(times[k]);
-
-    for (int k = 0; k < 6; k++)
-        run(times[k]);
     /********************************************************************************/
     /*
    * We will create a sample puzzle and use the client crypto utility to solve it. The solvedPuzzle will be used to
    * test the verification process of the design
    * */
+    /********************************************************************************/
+
+    cout << "\nAnalysis for verifying client puzzle solution\n" << endl;
+    executeVerification(5);
+
+}
+
+void executeGeneration(int n) {
+    for(int i =0; i < n; i++) {
+        for (int k = 0; k < 6; k++)
+            runWithGeneration(times[k]);
+    }
+}
+void runWithGeneration(int t) {
+    auto start = std::chrono::high_resolution_clock::now();
+    //===========================================================================
+    for (int i = 0; i < t; i++)
+        server.getPuzzlePayload();
+    //===========================================================================
+    auto elapsed = std::chrono::high_resolution_clock::now() - start;
+    long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+    cout << to_string(t) + "," + to_string(microseconds) << endl; //convert to seconds
+
+    server.clearVerificationBucket();
+}
+
+void executeVerification(int n) {
     ClientCrypto client = {};
     Payload serverPayload = server.payload();
     client.calculateSolution(
@@ -51,46 +68,21 @@ int main(int argc, char const *argv[]) {
             serverPayload.maxIterations);
     client.setIndex(serverPayload.index);
     Payload clientPayload = client.payload();
-    /********************************************************************************/
 
-    cout << "\nAnalysis for verifying client puzzle solution\n" << endl;
-    for (int k = 0; k < 6; k++)
-        runWithVerifications(clientPayload, times[k]);
-
-    for (int k = 0; k < 6; k++)
-        runWithVerifications(clientPayload, times[k]);
-
-    for (int k = 0; k < 6; k++)
-        runWithVerifications(clientPayload, times[k]);
-
-    for (int k = 0; k < 6; k++)
-        runWithVerifications(clientPayload, times[k]);
-
-    for (int k = 0; k < 6; k++)
-        runWithVerifications(clientPayload, times[k]);
+    for(int i =0; i < n; i++) {
+        for (int k = 0; k < 6; k++)
+            runWithVerifications(clientPayload, times[k]);
+    }
 }
 
-void run(int times) {
+void runWithVerifications(Payload solvedPayload, int t) {
     auto start = std::chrono::high_resolution_clock::now();
     //===========================================================================
-    for (int i = 0; i < times; i++)
-        server.getPuzzlePayload();
-    //===========================================================================
-    auto elapsed = std::chrono::high_resolution_clock::now() - start;
-    long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
-    cout << to_string(times) + "," + to_string(microseconds) << endl; //convert to seconds
-
-    server.clearVerificationBucket();
-}
-
-void runWithVerifications(Payload solvedPayload, int times) {
-    auto start = std::chrono::high_resolution_clock::now();
-    //===========================================================================
-    for (int i = 0; i < times; i++) {
+    for (int i = 0; i < t; i++) {
         server.verifySolution(solvedPayload.solvedPuzzle + solvedPayload.messageDigest, solvedPayload.index);
     }
     //===========================================================================
     auto elapsed = std::chrono::high_resolution_clock::now() - start;
     long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
-    cout << to_string(times) + "," + to_string(microseconds) << endl; //convert to seconds
+    cout << to_string(t) + "," + to_string(microseconds) << endl; //convert to seconds
 }
