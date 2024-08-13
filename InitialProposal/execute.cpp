@@ -45,7 +45,7 @@ void runWithGeneration(int t) {
     //===========================================================================
     for (int i = 0; i < t; i++) {
         ClientPuzzle server = {};
-        server.payload();
+        cout<< server.getPuzzlePayload() << endl;
     }
     //===========================================================================
     auto elapsed = std::chrono::high_resolution_clock::now() - start;

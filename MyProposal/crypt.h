@@ -89,6 +89,7 @@ public:
  */
 
 void ClientPuzzle::init_clientPuzzle() {
+    //Set random number generator
     srand((unsigned) time(0));
     runner();
     loadDFAFromFile();
@@ -340,7 +341,7 @@ string ClientPuzzle::getPuzzlePayload() {
            payload.puzzle + DELIMITER + //puzzle_to_solve
            to_string(payload.numberOfMissingCharacters) + DELIMITER + //maskLength
            to_string(MAX_ITERATIONS) + DELIMITER + //Max hash iterations
-           to_string(payload.index);
+           to_string(payload.index); //index
 }
 
 /*
